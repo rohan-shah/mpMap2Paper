@@ -1,0 +1,97 @@
+\pdfoutput=1
+\RequirePackage{fix-cm}
+\documentclass[a4paper, nojss, shortnames]{jss}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, setspace, eucal, mathrsfs}
+\usepackage{subfigure}
+\usepackage{pdflscape}
+\usepackage{comment}
+\usepackage[nonumberlist]{glossaries}
+\usepackage{mathtools}
+\usepackage{bbm}
+\usepackage{natbib}
+\usepackage[ruled, vlined]{algorithm2e}
+\usepackage{hyperref}
+
+\def\lcu{\left\{}
+\def\rcu{\right\}}
+\def\({\left(}
+\def\){\right)}
+\def\[{\left[}
+\def\]{\right]}
+\def\<{\left<}
+\def\>{\right>}
+\def\lmid{\;\middle\vert\;}
+
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
+
+\def\E{\mathbb{E}}
+\def\P{\mathbb{P}}
+\newcommand{\abs}[1]{\left| #1 \right|}
+\newcommand{\eqdef}{\,{\buildrel \mathrm{def} \over =}\,}
+
+\newcommand\commentFont[1]{\footnotesize\ttfamily{#1}}
+\SetCommentSty{commentFont}
+
+\author{Rohan Shah\\The University of Queensland, Brisbane\\Data 61 \And B. Emma Huang\\Janssen Research \& Development
+}
+\Plainauthor{Rohan Shah, B. Emma Huang}
+\title{\pkg{mpMap2} and \pkg{mpMapInteractive2}: An R pipeline for genetic map construction}
+\Plaintitle{mpMap2 and mpMapInteractive2: An R pipeline for genetic map construction}
+
+\Abstract{
+Multiparent crosses of recombinant inbred lines are now being commonly generated for major crop species. Analysis of these populations typically requires construction of a genetic map, a search for quantitative trait loci (QTL) and the imputation of underlying genotypes. These steps pose a significant computational and statistical challenge. Packages \pkg{mpMap2} and \pkg{mpMapInteractive2} provide a complete pipeline such an analysis of multi-parent populations with more than 100,000 markers. }
+
+\Keywords{Multiparent crosses, genetic map construction, qtl mapping, \proglang{C++}, \proglang{R}}
+\Plainkeywords{Network reliability, residual connectivity, Monte Carlo methods, R}
+
+\Address{
+  School of Mathematics and Physics\\
+  The University of Queensland\\
+  Brisbane, Australia\\
+  E-mail:\\
+  \email{Rohan.Shah@rohan-shah.com}\\
+}
+
+\begin{document}
+
+\section{Introduction}
+
+Multiparent recombinant inbred lines are a novel class of experimental design where the genotypes of the final progeny are mosaics of the genotypes of the $2^n$ recombinant inbred founder lines. These designs have found recent application in mice \citep{Churchill2004}, Arabadopsis \citep{Kover2009}, barley \citep{}, maize, rice, tomatoes \citep{Pascual2015} and wheat \citep{Huang2012, Mackay2014}. 
+
+Existing software able to analyze multiparent designs includes \pkg{happy}, \pkg{qtl} and \pkg{mpMap} (the previous version of \pkg{mpMap2}). Packages \pkg{happy} and \pkg{qtl} are focused on qtl mapping, and do not provide the functionality necessary for map construction. Package \pkg{mpMap} provides map construction functionality for multiparent designs, but has significant limitations. Some of these limitations are computational, such as problems analysing the large data sets currently being generated. Others are statistical, such as the inability to model finite generations of selfing and residual hetrzygosity. 
+
+These limitations motivated the development of \pkg{mpMap2} and \pkg{mpMapInteractive2}. Our goals for \pkg{mpMap2} were
+\begin{enumerate}
+\item To write functionality in \proglang{C++} where required. 
+\item To make use of the S4 object system, to enable easier integration of \proglang{C++} code.
+\item To extend the package to biparental populations. 
+\item To allow for finite generations of selfing, and therefore incorporate hetrozygous lines into the map construction process. 
+\end{enumerate}
+
+\section{Experimental designs}
+
+We first outline the most general experimental design that we wish to be able to analyse. We have $2^n$ inbred founder lines, which are bred together for the first $n$ generations, to give $N$ lines whoose genetic material is a mosaic of the original $2^n$ founders. 
+
+\section{Simulation}
+
+\subsection{Pedigrees}
+
+Package \pkg{mpMap2} provides code for the generation of a large number of pedigrees. The two biparental design functions are \code{rilPedigree(populationSize, selfingGenerations)} which generates a biparental RIL pedigree, and \code{f2Pedigree(populationSize)} which generates an F2 population. Note that the RIL pedigree requires the specification of the number of generations of selfing, and the populations generated from this pedigree is likely to contain some residual hetrozygosity. The pedigree object has a slot \code{selfing} that controls whether this hetrozygosity is modelled in the analysis. The only possible values are \code{"auto"}, in which case hetrozygosity is explicitly modelled, or \code{"infinite"} in which case the number of generations of selfing is assumed to be inifinite. 
+
+The two functions for simulation of four parent RIL designs are \code{fourParentPedigreeSingleFunnel} and \code{fourParentPedigreeRandomFunnels}. In the first case only one of the three funnels is used. The second four-parent design uses randomly chosen funnels for each initial cross. 
+
+\subsection{Genotypes}
+
+\section{Estimation of recombination fractions}
+
+\section{Construction of linkage groups}
+
+\section{Ordering of chromosomes}
+
+\section{Example}
+
+\bibliography{./mpMap2}
+\end{document}
