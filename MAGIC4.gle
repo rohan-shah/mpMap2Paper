@@ -1,0 +1,129 @@
+size 14.0 13.0
+set lwidth 0
+
+height = 13
+barheight = 3
+barwidth = 0.5
+barspacing = 0.5
+
+colourA$ = "rgb255(255, 0, 0)"
+colourB$ = "rgb255(255, 191, 0)"
+colourC$ = "yellow"
+!colourC$ = "rgb255(128, 255, 0)"
+colourD$ = "rgb255(0, 255, 64)"
+
+sub topLevelArrow
+	set lwidth 0.1
+	rmove -0.5 0.25
+	rline 1.5 0
+	rmove -0.75 0
+	rline 0 -2 arrow end
+	rmove -0.25 1.75
+	set lwidth 0
+end sub
+
+sub secondLevelArrow
+	set lwidth 0.1
+	rmove -2.5 0.25
+	rline 5.5 0
+	rmove -2.75 0
+	rline 0 -2.5 arrow end
+	rmove -0.25 2.25
+	set lwidth 0
+end sub
+
+sub thirdLevelArrow
+	set lwidth 0.1
+	rmove -6 0.25
+	rline 12.5 0
+	rmove -6.25 0
+	rline 0 -2.5 arrow end
+	rmove -0.25 2.25
+	set lwidth 0
+end sub
+
+
+amove 1.5 height-0.5
+begin scale 2 2
+	text A
+end scale
+
+rmove 3 0
+begin scale 2 2
+	text B
+end scale
+
+rmove 4 0
+begin scale 2 2
+	text C
+end scale
+
+rmove 3 0
+begin scale 2 2
+	text D
+end scale
+
+amove 1 height-barheight-1
+box barwidth barheight fill colourA$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourA$
+
+rmove 3-barwidth-barspacing 0
+box barwidth barheight fill colourB$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourB$
+
+rmove 4-barwidth-barspacing 0
+box barwidth barheight fill colourC$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourC$
+
+rmove 3-barwidth-barspacing 0
+box barwidth barheight fill colourD$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourD$
+
+amove 3 height-barheight/2-1-0.3
+topLevelArrow
+
+rmove 7 0
+topLevelArrow
+
+amove 2.5 height-barheight*2-2
+box barwidth barheight fill colourA$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourB$
+
+rmove 7-barwidth-barspacing 0
+box barwidth barheight fill colourC$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourD$
+
+amove 6.5 height-barheight*2-0.7
+secondLevelArrow
+!begin scale 2 2
+!	write X
+!end scale
+
+amove 6 height-barheight*3-3
+box barwidth 0.5 fill colourB$
+rmove 0 0.5
+box barwidth 0.5 fill colourA$
+rmove 0 0.5
+box barwidth 1 fill colourB$
+rmove 0 1
+box barwidth 0.7 fill colourA$
+rmove 0 0.7
+box barwidth 0.3 fill colourB$
+rmove 0 0.3
+
+amove 6 height-barheight*3-3
+rmove barwidth+barspacing 0
+box barwidth 0.8 fill colourC$
+rmove 0 0.8
+box barwidth 1.3 fill colourD$
+rmove 0 1.3
+box barwidth 0.4 fill colourC$
+rmove 0 0.4
+box barwidth 0.5 fill colourD$
+rmove 0 0.5

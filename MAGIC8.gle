@@ -1,0 +1,266 @@
+size 28.0 17.0
+set lwidth 0
+
+height = 17
+barheight = 3
+barwidth = 0.5
+barspacing = 0.5
+
+colourA$ = "rgb255(255, 0, 0)"
+colourB$ = "rgb255(255, 191, 0)"
+colourC$ = "yellow"
+!colourC$ = "rgb255(128, 255, 0)"
+colourD$ = "rgb255(0, 255, 64)"
+colourE$ = "rgb255(0, 255, 255)"
+colourF$ = "rgb255(0, 64, 255)"
+colourG$ = "rgb255(128, 0, 255)"
+colourH$ = "rgb255(255, 0, 191)"
+
+sub topLevelArrow
+	set lwidth 0.1
+	rmove -0.5 0.25
+	rline 1.5 0
+	rmove -0.75 0
+	rline 0 -2 arrow end
+	rmove -0.25 1.75
+	set lwidth 0
+end sub
+
+sub secondLevelArrow
+	set lwidth 0.1
+	rmove -2.5 0.25
+	rline 5.5 0
+	rmove -2.75 0
+	rline 0 -2.5 arrow end
+	rmove -0.25 2.25
+	set lwidth 0
+end sub
+
+sub thirdLevelArrow
+	set lwidth 0.1
+	rmove -6 0.25
+	rline 12.5 0
+	rmove -6.25 0
+	rline 0 -2.5 arrow end
+	rmove -0.25 2.25
+	set lwidth 0
+end sub
+
+
+amove 1.5 height-0.5
+begin scale 2 2
+	text A
+end scale
+
+rmove 3 0
+begin scale 2 2
+	text B
+end scale
+
+rmove 4 0
+begin scale 2 2
+	text C
+end scale
+
+rmove 3 0
+begin scale 2 2
+	text D
+end scale
+
+rmove 4 0
+begin scale 2 2
+	text E
+end scale
+
+rmove 3 0
+begin scale 2 2
+	text F
+end scale
+
+rmove 4 0
+begin scale 2 2
+	text G
+end scale
+
+rmove 3 0
+begin scale 2 2
+	text H
+end scale
+
+amove 1 height-barheight-1
+box barwidth barheight fill colourA$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourA$
+
+rmove 3-barwidth-barspacing 0
+box barwidth barheight fill colourB$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourB$
+
+rmove 4-barwidth-barspacing 0
+box barwidth barheight fill colourC$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourC$
+
+rmove 3-barwidth-barspacing 0
+box barwidth barheight fill colourD$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourD$
+
+rmove 4-barwidth-barspacing 0
+box barwidth barheight fill colourE$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourE$
+
+rmove 3-barwidth-barspacing 0
+box barwidth barheight fill colourF$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourF$
+
+rmove 4-barwidth-barspacing 0
+box barwidth barheight fill colourG$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourG$
+
+rmove 3-barwidth-barspacing 0
+box barwidth barheight fill colourH$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourH$
+
+amove 3 height-barheight/2-1-0.3
+topLevelArrow
+
+rmove 7 0
+topLevelArrow
+
+rmove 7 0
+topLevelArrow
+
+rmove 7 0
+topLevelArrow
+
+amove 2.5 height-barheight*2-2
+box barwidth barheight fill colourA$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourB$
+
+rmove 7-barwidth-barspacing 0
+box barwidth barheight fill colourC$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourD$
+
+rmove 7-barwidth-barspacing 0
+box barwidth barheight fill colourE$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourF$
+
+rmove 7-barwidth-barspacing 0
+box barwidth barheight fill colourG$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourH$
+
+amove 6.5 height-barheight*2-0.7
+secondLevelArrow
+!begin scale 2 2
+!	write X
+!end scale
+
+rmove 14 0
+secondLevelArrow
+!begin scale 2 2
+!	write X
+!end scale
+
+amove 6 height-barheight*3-3
+box barwidth 0.5 fill colourB$
+rmove 0 0.5
+box barwidth 0.5 fill colourA$
+rmove 0 0.5
+box barwidth 1 fill colourB$
+rmove 0 1
+box barwidth 0.7 fill colourA$
+rmove 0 0.7
+box barwidth 0.3 fill colourB$
+rmove 0 0.3
+
+amove 6 height-barheight*3-3
+rmove barwidth+barspacing 0
+box barwidth 0.8 fill colourC$
+rmove 0 0.8
+box barwidth 1.3 fill colourD$
+rmove 0 1.3
+box barwidth 0.4 fill colourC$
+rmove 0 0.4
+box barwidth 0.5 fill colourD$
+rmove 0 0.5
+
+amove 20 height-barheight*3-3
+box barwidth 0.4 fill colourE$
+rmove 0 0.4
+box barwidth 0.8 fill colourF$
+rmove 0 0.8
+box barwidth 0.3 fill colourE$
+rmove 0 0.3
+box barwidth 0.1 fill colourF$
+rmove 0 0.1
+box barwidth 0.5 fill colourE$
+rmove 0 0.5
+box barwidth 0.9 fill colourF$
+rmove 0 0.9
+
+amove 20+barwidth+barspacing height-barheight*3-3
+box barwidth 0.2 fill colourG$
+rmove 0 0.2
+box barwidth 0.4 fill colourH$
+rmove 0 0.4
+box barwidth 0.5 fill colourG$
+rmove 0 0.5
+box barwidth 0.9 fill colourH$
+rmove 0 0.9
+box barwidth 0.4 fill colourG$
+rmove 0 0.4
+box barwidth 0.6 fill colourH$
+rmove 0 0.6
+
+amove 13.5 height-barheight*3-1.7
+thirdLevelArrow
+!begin scale 2 2
+!	write X
+!end scale
+
+amove 13 height-barheight*4-4
+box barwidth 0.1 fill colourA$
+rmove 0 0.1
+box barwidth 0.3 fill colourC$
+rmove 0 0.3
+box barwidth 0.2 fill colourB$
+rmove 0 0.2
+box barwidth 0.5 fill colourD$
+rmove 0 0.5
+box barwidth 0.7 fill colourB$
+rmove 0 0.7	
+box barwidth 0.2 fill colourD$
+rmove 0 0.2
+box barwidth 0.6 fill colourA$
+rmove 0 0.6
+box barwidth 0.4 fill colourB$
+rmove 0 0.4
+
+amove 13 height-barheight*4-4
+rmove barwidth+barspacing 0
+box barwidth 0.3 fill colourE$
+rmove 0 0.3
+box barwidth 0.7 fill colourF$
+rmove 0 0.7	
+box barwidth 0.2 fill colourE$
+rmove 0 0.2
+box barwidth 0.5 fill colourH$
+rmove 0 0.5
+box barwidth 0.1 fill colourG$
+rmove 0 0.1
+box barwidth 0.2 fill colourE$
+rmove 0 0.2
+box barwidth 0.6 fill colourG$
+rmove 0 0.6
+box barwidth 0.4 fill colourH$
+rmove 0 0.4
