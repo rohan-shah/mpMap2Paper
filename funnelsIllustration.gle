@@ -1,0 +1,46 @@
+size 19.0 5.0
+set lwidth 0
+
+height = 5
+barheight = 3
+barwidth = 0.5
+barspacing = 0.5
+
+colourA$ = "rgb255(255, 0, 0)"
+colourB$ = "rgb255(255, 191, 0)"
+colourC$ = "yellow"
+colourD$ = "rgb255(0, 255, 64)"
+colourE$ = "rgb255(0, 255, 255)"
+colourF$ = "rgb255(0, 64, 255)"
+colourG$ = "rgb255(128, 0, 255)"
+colourH$ = "rgb255(255, 0, 191)"
+
+amove 1 height-barheight-1
+box barwidth barheight fill colourA$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourE$
+
+rmove 3-barwidth-barspacing 0
+box barwidth barheight fill colourA$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourF$
+
+rmove 3-barwidth-barspacing 0
+box barwidth barheight fill colourA$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourG$
+
+rmove 3-barwidth-barspacing 0
+box barwidth barheight fill colourE$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourF$
+
+rmove 3-barwidth-barspacing 0
+box barwidth barheight fill colourE$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourG$
+
+rmove 3-barwidth-barspacing 0
+box barwidth barheight fill colourE$
+rmove barwidth+barspacing 0
+box barwidth barheight fill colourH$
