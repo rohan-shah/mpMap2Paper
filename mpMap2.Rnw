@@ -4,7 +4,8 @@
 \usepackage{amsthm}
 \usepackage{graphicx}
 \usepackage{amsmath, amssymb, setspace, eucal, mathrsfs}
-\usepackage{subfigure}
+\usepackage{caption}
+\usepackage{subcaption}
 \usepackage{pdflscape}
 \usepackage{comment}
 \usepackage[nonumberlist]{glossaries}
@@ -75,6 +76,7 @@ These limitations motivated the development of \pkg{mpMap2} and \pkg{mpMapIntera
 \item To allow the user to asses the computational resources required for an analysis. 
 \item To allow map construction to be performed visually and interactively. 
 \item To allow the simultaneous use of multiple experiments in the construction of a single map. 
+\item To use unit testing to speed up development. 
 \end{enumerate}
 
 \section{Experimental designs}
@@ -83,7 +85,7 @@ We first outline the most general experimental design that we wish to be able to
 
 After the first $n$ generations there is some number of generations of random intermating (possibly zero), and some number of generations of inbreeding by selfing (possibly zero). Mathematically it is possible to assume that the number of generations of inbreeding is infinite, and in this case the design is said to be a $2^n$-way RIL \citep{Teuscher2007}. In practice this cannot be achieved, but it might be assumed for the purposes of analysing the population. If the number of generations of selfing is non-zero and the number of generations of inbreeding is assumed to be infinite, the design is said to be a $2^n$-way intermated recombinant inbred population (IRIP) \citep{Teuscher2007}.
 
-One complication is that different orders of the founders in the initial cross result in genetically different individuals at the $n$th generation. For example, the first three genotypes in Figure \ref{fig:funnelIllustration} are ${A, E}, {A, F}$ and ${A, G}$ and are possible at the third generation, if the initial cross ${A, B, C, D, E, F, G, H}$ shown in Figure \ref{fig:intercrossing_3} is used. The remaining three genetoypes are ${E, F}, {E, G}$ and ${E, H}$, and are impossible using this initial cross. However, if founder lines $D$ and $E$ were swapped in the initial cross, then the first three genotypes become impossible, and the last three become possible.
+One complication is that different orders of the founders in the initial cross result in genetically different individuals at the $n$th generation. For example, the first three genotypes of $\{A, E\}, \{A, F\}$ and $\{A, G\}$ Figure \ref{fig:funnelIllustration} are possible at the third generation if the initial cross $\{A, B, C, D, E, F, G, H\}$ shown in Figure \ref{fig:intercrossing_3} is used. The remaining three genetoypes are $\{E, F\}, \{E, G\}$ and $\{E, H\}$, and are impossible using this initial cross. However, if founder lines $D$ and $E$ were swapped in the initial cross, then the first three genotypes become impossible, and the last three become possible.
 
 The initial crosses are known as \emph{funnels}. Accounting for symmetries, there are three different funnels for the $4$ parent design, $315$ different funnels for the 8-parent design and $638512875$ different funnels for the 16-parent design. Two cases are mathematically tractable. In the first, only one funnel is ever used. In the second every funnel is chosen at random, which averages out the differences between the funnels.
 
@@ -125,9 +127,9 @@ Input \code{initialPopulationSize} is the number of crosses of the founders, whi
 The functions for simulation of four parent RIL designs are \code{fourParentPedigreeSingleFunnel} and \code{fourParentPedigreeRandomFunnels}. In the first case only the funnel ${A, B, C, D}$) is used. In the second case each individual is drawn from a randomly chosen funnel. The signatures for these functions are
 \begin{Code}
 fourParentPedigreeRandomFunnels(initialPopulationSize, selfingGenerations, 
-    nSeeds, intercrossingGenerations)
+    nSeeds, intercrossingGenerations),
 fourParentPedigreeSingleFunnel(initialPopulationSize, selfingGenerations, 
-    nSeeds, intercrossingGenerations)
+    nSeeds, intercrossingGenerations).
 \end{Code}
 
 The functions for generating eight and sixteen parent designs have identical signatures and similar names, except with \code{four} replaced with \code{eight} or \code{sixteen}. 
@@ -136,9 +138,9 @@ The functions for generating eight and sixteen parent designs have identical sig
 
 Once a pedigree has been created it can be used to generate genetic data. Note that for simulation of genotypes the pedigree is not restricted to those listed above, and arbitrary pedigrees are allowed. The signature of the simulation function is
 \begin{Code}
-simulateMPCross(map, pedigree, mapFunction, seed)
+simulateMPCross(map, pedigree, mapFunction, seed).
 \end{Code}
-Input \code{map} is a genetic map object in the format used by package \pkg{qtl}. Input \code{pedigree} is a pedigree object and input \code{mapFunction} is a function that converts centiMorgan distances into recombination fractions. The two suggested values are \code{haldane} and \code{kosambi}. Input \code{seed} is the random seed used for random number generation in the simulation of the genetic data. 
+Input \code{map} is a genetic map object in the format used by package \pkg{qtl}. Input \code{pedigree} is a pedigree object and input \code{mapFunction} is a function that converts centiMorgan distances into recombination fractions. The two suggested values are \code{haldane} and \code{kosambi}. Input \code{seed} is the random seed used for random number generation in the simulation of the genetic data. The output is an S4 object of class \code{mpcross}. 
 
 As an example of the functions provided so far, we simulate from two four-parent designs of $1000$ individuals with one generation of intercrossing and four generations of selfing. One set of simulated data uses randomly chosen funnels, while the other uses a single funnel. The same genetic map is used in both cases; there are $2$ chromosomes of length $300$ cM, each of which has 301 equally spaced markers. 
 <<tidy=TRUE, tidy.opts=list(width.cutoff=56)>>=
@@ -155,7 +157,7 @@ pedigreeSF@lineNames <- paste0("SF", pedigreeSF@lineNames)
 crossSingleFunnel <- simulateMPCross(map = map, pedigree = pedigreeSF, mapFunction = haldane, seed = 1)
 crossRandomFunnels <- simulateMPCross(map = map, pedigree = pedigreeRF, mapFunction = haldane, seed = 1)
 @
-The simulated cross object has a single entry named \code{geneticData}, which is a list which can contain genetic data from multiple experiments. In the case of \code{crossSingleFunnel} and \code{crossRandomFunnels} this list has a single entry. These experiments can be combined using the addition operator to give a single object containing the data from both. The line names involved in both experiments must be different, which is the reason for the prefixes \code{"SF"} and \code{"RF"}. 
+The simulated cross object has a single entry named \code{geneticData}, which is a list of S4 objects of class \code{geneticData}. This allows \code{mpcross} objects to contain data from multiple experiments. In the case of \code{crossSingleFunnel} and \code{crossRandomFunnels} the list has a single entry. Experiments can be combined using the addition operator to give a single object containing the data from both. The line names involved in both experiments must be different, which is the reason for the prefixes \code{"SF"} and \code{"RF"}. 
 <<>>=
 length(crossSingleFunnel@geneticData)
 length(crossRandomFunnels@geneticData)
@@ -163,24 +165,93 @@ combined <- crossSingleFunnel + crossRandomFunnels
 length(combined@geneticData)
 @
 
+The number of markers, founder lines and final lines can be extracted using functions \code{nMarkers}, \code{nFounders} and \code{nLines}. The number of markers is standardised once the objects are combined, so the \code{nMarkers} function outputs only a single value. Functions \code{nFounders} and \code{nLines} output a value for each contained design. 
+
 <<>>=
-print(cross)
-nMarkers(cross)
-nLines(cross)
-nFounders(cross)
+nMarkers(crossSingleFunnel)
+nFounders(crossSingleFunnel)
+nFounders(combined)
+nLines(crossSingleFunnel)
+nLines(combined)
 @
 
-The marker alleles for each founder are contained in a 
+A summary of an \code{mpcross} object is generated using the print function. 
 
-Note that the output of \code{print(cross)} says that all markers are multiallelic. When simulating data using \code{simulateMPCross} all markers are fully informative (including all hets, which are simulated as being distinguishable). 
+<<>>=
+print(crossSingleFunnel)
+print(combined)
+@
+
+Note that the summaries for both objects say that all markers are multiallelic. When simulating data using \code{simulateMPCross} all markers are generated as fully informative (including all hets, which are simulated as being distinguishable). We can see this by inspecting the contained objects of class \code{geneticData}. Slot \code{founders} contains data about the founder alleles, and slot \code{hetData} determines how hetrozygotes are mapped to observed values. In the case of the data we have generated so far, each founder has a unique allele, and all hetrozygotes are distinct. 
+<<>>=
+crossSingleFunnel@geneticData[[1]]@founders[,1:5]
+crossSingleFunnel@geneticData[[1]]@hetData[["D1M1"]]
+@
+Observed values $1 - 4$ correspond to homozygotes for founder lines, and values $5 - 10$ correspond to different hetrozygotes. We specified $4$ generations of selfing and this is reflected in the distribution of observed values for the final population. 
+<<>>=
+table(crossSingleFunnel@geneticData[[1]]@finals[,1])
+@
+
+The {\color{red}most common types of markers} (I think?) currently used are \emph{Single Nucleotide Polymorphism} (SNP) markers. To convert our simulated data objects to these types of markers, we combine them with a call to \code{multiparentSNP}. 
+<<>>=
+snpSingleFunnel <- crossSingleFunnel + multiparentSNP(keepHets = TRUE)
+snpSingleFunnel@geneticData[[1]]@founders[,1:5]
+snpSingleFunnel@geneticData[[1]]@hetData[["D1M1"]]
+@
+The founders in object \code{snpSingleFunnel} now have only two alleles ($0$ and $1$) for every marker, and a hetrozygote for the marker is coded as $2$. If \code{keepHets = FALSE} is specified hetrozygotes are replaced by \code{NA}. The corresponding function for biparental designs is \code{biparentalSNP}. 
 
 \section{Estimation of recombination fractions}
+
+\subsection{Methodology}
+
+For any pair genetic location there is a probability model govering the joint distribution of the sources of the inherited alleles. That is, a genotyped final line will have an allele at marker $M_1$ inherited from some founder line, and another allele at marker $M_2$ inherited from a (potentially different) founder line. Note that we ignore the fact that founders may have identical alleles; it is the source of the allele that is important. 
+
+These joint distributions are governed by the \emph{identity-by-descent} probabilities, which have been calculated for a variety of different designs \citep{Teuscher2007,Broman2005,Broman2012a,Broman2012b}. These probabilities are a function of the recombination fraction $r$ between the two markers. Several examples of relevant probability models are given in Appendix \ref{sec:ibd_models}. The relevant probabilities for more complicated designs (especially those with finite generations of selfing) are too complicated to give here, but can be calculated with the help of a computer algebra system such as Octave or Mathematica. 
+
+If two markers are fully informative, then the probability model is informative for the parameter $r$, which can be estimated using numerical maximum likelihood. However this may no longer be true when the markers are less informative. For example, assume we have a four-parent design with a single funnel and infinite generations of selfing, and markers $M_1$ and $M_2$ with the following distribution of marker alleles for the founders.
+<<echo=FALSE>>=
+cbind(M1 = c("Founder 1" = 1, "Founder 2" = 0, "Founder 3" = 0, "Founder 4" = 1), M2 = c("Founder 1" = 0, "Founder 2" = 1, "Founder 3" = 0, "Founder 4" = 1))
+@
+In this case every combination of marker alleles occurs with probability $\frac{1}{4}$, regardless of the parameter $r$. For this particular design, this combination of marker allele distributions is the only one that is non-informative for $r$. 
+
+The situation appears to be more complicated the larger the number of founders. For the eight-way design with a single funnel and infinite generations of selfing, the following marker allele distribution is \emph{approximately uninformative} for the parameter $r$. <<echo=FALSE>>=
+cbind(M1 = c("Founder 1" = 1, "Founder 2" = 0, "Founder 3" = 0, "Founder 4" = 1, "Founder 5" = 1, "Founder 6" = 0, "Founder 7" = 1, "Founder 8" = 1), M2 = c("Founder 1" = 0, "Founder 2" = 0, "Founder 3" = 1, "Founder 4" = 0, "Founder 5" = 0, "Founder 6" = 0, "Founder 7" = 1, "Founder 8" = 1))
+@
+In this case the likelihood is approximately (but not exactly) flat. The marker probabilities as a function of $r$ are shown in Figure \ref{fig:approximately_flat}. 
+
+\begin{figure}
+\centering
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{approximatelyFlat1.pdf}
+	\end{subfigure}
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{approximatelyFlat2.pdf}
+	\end{subfigure}
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{approximatelyFlat3.pdf}
+	\end{subfigure}
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{approximatelyFlat4.pdf}
+	\end{subfigure}
+	\caption{Joint marker probabilities for an approximately uninformative pair of markers. The design used is an eight-parent cross with infinite selfing. \label{fig:approximately_flat}}
+\end{figure}
+
+Determining whether a pair of markers is informative can in theory be done by testing whether the derivative of the likelihood is always zero
+
+\subsection{Implementation}
+
+The function \code{estimateRF} can be used to estimate the recombination fractions between all pairs of markers in an \emph{mpcross} object. 
 
 \section{Construction of linkage groups}
 
 \section{Ordering of chromosomes}
 
 \section{Example}
+
+\appendix
+
+\section{Probability models}
+\label{sec:ibd_models}
 
 \bibliography{./mpMap2}
 \end{document}
