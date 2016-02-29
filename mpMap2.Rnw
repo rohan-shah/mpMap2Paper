@@ -204,7 +204,7 @@ The founders in object \code{snpSingleFunnel} now have only two alleles ($0$ and
 
 \subsection{Methodology}
 
-For any pair genetic location there is a probability model govering the joint distribution of the sources of the inherited alleles. That is, a genotyped final line will have an allele at marker $M_1$ inherited from some founder line, and another allele at marker $M_2$ inherited from a (potentially different) founder line. Note that we ignore the fact that founders may have identical alleles; it is the source of the allele that is important. 
+For any pair of genetic locations there is a probability model govering the joint distribution of the sources of the inherited alleles. That is, a genotyped final line will have an allele at marker $M_1$ inherited from some founder line, and another allele at marker $M_2$ inherited from a (potentially different) founder line. We ignore the fact that different founders may have identical alleles; it is the source of the allele that is important. 
 
 These joint distributions are governed by the \emph{identity-by-descent} probabilities, which have been calculated for a variety of different designs \citep{Teuscher2007,Broman2005,Broman2012a,Broman2012b}. These probabilities are a function of the recombination fraction $r$ between the two markers. Several examples of relevant probability models are given in Appendix \ref{sec:ibd_models}. The relevant probabilities for more complicated designs (especially those with finite generations of selfing) are too complicated to give here, but can be calculated with the help of a computer algebra system such as Octave or Mathematica. 
 
@@ -237,11 +237,7 @@ In this case the likelihood is approximately (but not exactly) flat. The marker 
 	\caption{Joint marker probabilities for an approximately uninformative pair of markers. The design used is an eight-parent cross with infinite selfing. \label{fig:approximately_flat}}
 \end{figure}
 
-In theory we can test whether a pair of markers is non-informative by testing whether the derivative of the likelihood is identically zero. This was the approach originally used in \pkg{mpMap}, however it appears to only be practical for designs involving infinite generations of selfing, and cannot be used to identify markers that are approximately non-informative. For this reason we have chosen to use a numerical test for non-informative markers. The marker probabilities are computed for a large number of equally spaced values of $r$. Let $\lcu P_i \rcu$ be the set of such probabilities at some recombination value $r_1$ and $\lcu Q_i \rcu$ be the set of such probabilities at some recombination value $r_2$. If there are recombination values $r_1$ and $r_2$ with $\abs{r_1 - r_2} > 0.06$ so that the $L^1$ distance
-\begin{align*}
-\sum_i \abs{P_i - Q_i}
-\end{align*}
-is less than $0.003$, then the pair of markers will be declared uninformative. Although this heuristic is computationally expensive, it has the advantage of detecting both uninformative and approximately uninformative pairs of markers.  
+In theory we can test whether a pair of markers is non-informative by testing whether the derivative of the likelihood is identically zero. This was the approach originally used in \pkg{mpMap}, however it appears to only be practical for designs involving infinite generations of selfing, and cannot be used to identify markers that are approximately non-informative. For this reason we have chosen to use a numerical test for non-informative markers. The marker probabilities are computed for a large number of equally spaced values of $r$. Let $\lcu P_i(r) \rcu$ be the set of such probabilities at some recombination value $r$. If there are recombination values $r_1$ and $r_2$ with $\abs{r_1 - r_2} > 0.06$ so that the $L^1$ distance $\sum_i \abs{P_i(r_1) - Q_i(r_2)}$ is less than $0.003$, then the pair of markers will be declared uninformative. Although this heuristic is computationally expensive, it has the advantage of detecting both uninformative and approximately uninformative pairs of markers.  
 
 \subsection{Implementation}
 
