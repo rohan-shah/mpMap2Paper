@@ -132,6 +132,8 @@ fourParentPedigreeSingleFunnel(initialPopulationSize, selfingGenerations,
     nSeeds, intercrossingGenerations).
 \end{Code}
 
+\subsubsection{Higher order pedigrees}
+
 The functions for generating eight and sixteen parent designs have identical signatures and similar names, except with \code{four} replaced with \code{eight} or \code{sixteen}. 
 
 \subsection{Genotypes}
@@ -202,7 +204,7 @@ The founders in object \code{snpSingleFunnel} now have only two alleles ($0$ and
 
 \section{Estimation of recombination fractions}
 
-\subsection{Methodology}
+\subsection{Methodology}\label{subsec:estimation_rf_methodology}
 
 For any pair of genetic locations there is a probability model govering the joint distribution of the sources of the inherited alleles. That is, a genotyped final line will have an allele at marker $M_1$ inherited from some founder line, and another allele at marker $M_2$ inherited from a (potentially different) founder line. We ignore the fact that different founders may have identical alleles; it is the source of the allele that is important. 
 
@@ -212,40 +214,74 @@ If two markers are fully informative, then the probability model is informative 
 <<echo=FALSE,cache=TRUE>>=
 cbind(M1 = c("Founder 1" = 1, "Founder 2" = 0, "Founder 3" = 0, "Founder 4" = 1), M2 = c("Founder 1" = 0, "Founder 2" = 1, "Founder 3" = 0, "Founder 4" = 1))
 @
-In this case every combination of marker alleles occurs with probability $\frac{1}{4}$, regardless of the parameter $r$. For this particular design, this combination of marker allele distributions is the only one that is non-informative for $r$. 
+In this case every combination of marker alleles occurs with probability $\frac{1}{4}$, regardless of the parameter $r$. For four-parent designs this combination of marker allele distributions is the only one that may be non-informative for $r$. Note that for four-parent designs with finite generations of selfing this combination may in fact be informative. 
 
-The situation appears to be more complicated the larger the number of founders. For the eight-way design with a single funnel and infinite generations of selfing, the following marker allele distribution is \emph{approximately uninformative} for the parameter $r$. 
+The situation appears to be more complicated the larger the number of founders. For the eight-way design there are combinations of marker allele distributions that are completely uninformative, similar to the four parent design. However there are also marker allele distributions which are \emph{approximately uninformative} for the parameter $r$. For example, consider the following marker allele distributions with a single funnel and infinite generations of selfing.
 <<echo=FALSE,cache=TRUE>>=
 cbind(M1 = c("Founder 1" = 1, "Founder 2" = 0, "Founder 3" = 0, "Founder 4" = 1, "Founder 5" = 1, "Founder 6" = 0, "Founder 7" = 1, "Founder 8" = 1), M2 = c("Founder 1" = 0, "Founder 2" = 0, "Founder 3" = 1, "Founder 4" = 0, "Founder 5" = 0, "Founder 6" = 0, "Founder 7" = 1, "Founder 8" = 1))
 @
-In this case the likelihood is approximately (but not exactly) flat. The marker probabilities as a function of $r$ are shown in Figure \ref{fig:approximately_flat}. 
+In this case the likelihood is approximately (but not exactly) flat. The marker probabilities as a function of $r$ are shown in Figure \ref{fig:approximately_flat_no_intercross}. The case of randomly chosen funnels, with infinite generations of selfing and ten generations of intercrossing is shown in Figure \ref{fig:approximately_flat_ten_intercross}.
 
+%These figures come from mathematica notebook finiteSelfingIntercrossing8WaySingleFunnel.nb, stored with the mpMap2 package itself. 
 \begin{figure}
 \centering
 	\begin{subfigure}{0.48\textwidth}
-		\includegraphics[scale = 0.2]{approximatelyFlat1.pdf}
+		\includegraphics[scale = 0.2]{approximatelyFlatSingleFunnel00.pdf}
 	\end{subfigure}
 	\begin{subfigure}{0.48\textwidth}
-		\includegraphics[scale = 0.2]{approximatelyFlat2.pdf}
+		\includegraphics[scale = 0.2]{approximatelyFlatSingleFunnel01.pdf}
 	\end{subfigure}
 	\begin{subfigure}{0.48\textwidth}
-		\includegraphics[scale = 0.2]{approximatelyFlat3.pdf}
+		\includegraphics[scale = 0.2]{approximatelyFlatSingleFunnel10.pdf}
 	\end{subfigure}
 	\begin{subfigure}{0.48\textwidth}
-		\includegraphics[scale = 0.2]{approximatelyFlat4.pdf}
+		\includegraphics[scale = 0.2]{approximatelyFlatSingleFunnel11.pdf}
 	\end{subfigure}
-	\caption{Joint marker probabilities for an approximately uninformative pair of markers. The design used is an eight-parent cross with infinite selfing. \label{fig:approximately_flat}}
+	\caption{Joint marker probabilities for an approximately uninformative pair of markers. The design used is an eight-parent cross with a single funnel, zero generations of intercrossing and infinite generations of selfing. \label{fig:approximately_flat_no_intercross}}
 \end{figure}
 
-In theory we can test whether a pair of markers is non-informative by testing whether the derivative of the likelihood is identically zero. This was the approach originally used in \pkg{mpMap}, however it appears to only be practical for designs involving infinite generations of selfing, and cannot be used to identify markers that are approximately non-informative. For this reason we have chosen to use a numerical test for non-informative markers. The marker probabilities are computed for a large number of equally spaced values of $r$. Let $\lcu P_i(r) \rcu$ be the set of such probabilities at some recombination value $r$. If there are recombination values $r_1$ and $r_2$ with $\abs{r_1 - r_2} > 0.06$ so that the $L^1$ distance $\sum_i \abs{P_i(r_1) - Q_i(r_2)}$ is less than $0.003$, then the pair of markers will be declared uninformative. Although this heuristic is computationally expensive, it has the advantage of detecting both uninformative and approximately uninformative pairs of markers.  
+%These figures come from mathematica notebook finiteSelfingIntercrossing8Way.nb, stored with the mpMap2 package itself. 
+\begin{figure}
+\centering
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{approximatelyFlatRandomFunnelTenIntercrossing00.pdf}
+	\end{subfigure}
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{approximatelyFlatRandomFunnelTenIntercrossing01.pdf}
+	\end{subfigure}
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{approximatelyFlatRandomFunnelTenIntercrossing10.pdf}
+	\end{subfigure}
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{approximatelyFlatRandomFunnelTenIntercrossing11.pdf}
+	\end{subfigure}
+	\caption{Joint marker probabilities for an approximately uninformative pair of markers. The design used is an eight-parent cross with randomly chosen funnels, ten generations of intercrossing and infinite generations of selfing. \label{fig:approximately_flat_ten_intercross}}
+\end{figure}
+
+In theory we can test whether a pair of markers is non-informative by testing whether the derivative of the likelihood is identically zero. This was the approach originally used in \pkg{mpMap}, however it appears to only be practical for designs involving infinite generations of selfing, and \emph{cannot} be used to identify marker pairs that are approximately non-informative. For this reason it is necessary to use a numerical test for non-informative and approximately non-informative marker pairs. 
+
+The marker probabilities are computed for a large number of equally spaced values of $r$. Let $\lcu P_i(r) \rcu$ be the set of marker probabilities at some recombination value $r$. If there are recombination values $r_1$ and $r_2$ with $\abs{r_1 - r_2} > 0.06$ so that the $L^1$ distance $\sum_i \abs{P_i(r_1) - P_i(r_2)}$ is less than $0.003$, then the pair of markers will be declared uninformative. Although this heuristic is computationally expensive, it has the advantage of detecting both uninformative and approximately uninformative pairs of markers, as we will demonstrate in the next section. 
 
 \subsection{Implementation}
 
-The function \code{estimateRF} can be used to estimate the recombination fractions between all pairs of markers in an \emph{mpcross} object. 
+The function \code{estimateRF} estimates the recombination fractions between all pairs of markers in an \code{mpcross} object using numerical maximum likelihood and a simple grid search. It accounts for all the data sets contained in the object when performing the estimation, and uses the numerical test mentioned at the end of Section \ref{subsec:estimation_rf_methodology} to return a value of \code{NA} where the relevant probability model is uninformative or approximately uninformative. 
+
+The signature of the function is
+\begin{Code}
+estimateRF(object, recombValues, lineWeights, gbLimit = -1, keepLod = FALSE, 
+    keepLkhd = FALSE, verbose = FALSE)
+\end{Code}
+Input \code{object} is an object of class \code{mpcross} and input \code{recombValues} is the set of recombination fraction values to test in the grid search. Input \code{lineWeights} allows correction for segregation distortion and is beyond the scope of this document, see \citet{Shah2014} for further details. Input \code{gbLimit} specifies the maximum amount of memory to be used during the comutation. Input \code{keepLod} and \code{keepLkhd}. Input \code{verbose} outputs diagnostic information such as the current progress, and the amount of memory used. 
+
+The value returned by the function is an object of class \code{mpcrossRF}. It has the same \code{geneticData} slot as the object of class \code{mpcross}, but also contains a slot named \code{rf} with the results of the computation. The main result is the matrix of recombination fraction estimates, which is stored in slot \code{@rf@theta}. If this was stored as a numeric matrix it would require hundreds of gigabytes of storage space for some data sets. Fortunately, this matrix is symmetric, and each entry is one of the values specified in input \code{recombValues}. This matrix is therefore stored as an object of class \code{rawSymmetricMatrix}, which stores each value in the upper triangle of the matrix as a single byte. Each byte is interpreted as the index into \code{recombValues} which gives the estimated value. This requires only $\frac{n(n+1)}{2}$ bytes of storage, a 16-fold reduction in storage requirements compared to the storage of a similar object in \pkg{mpMap}. The value of \code{0xff} is interpreted as being \code{NA}. This requires input \code{recombValues} to always have less than 256 values, but this is not a siginificant limitation. 
+
+The intermediate stages of the computation require significantly more memory than the final result. It may be necessary to perform the computation of the recombination fraction matrix in parts to avoid running out of memory. Input \code{gbLimit} allows the user to specify the maximum amount of memory (in gigabytes) to be used at any one time.
 
 \section{Construction of linkage groups}
 
 \section{Ordering of chromosomes}
+
+Ordering of chromosomes is performed using \emph{simulated annealing}. We use a simulated annealing method \citep{Brusco2005} known as \emph{Anti-Robinson seriation}. The implementation originally comes from the \pkg{seriation} package \citep{Hahsler2008}, and has been adapted to our data structures. Although it performs \emph{extremely} well on smaller data sets, it is prohibitively expensive on larger data sets, and cannot easily be parallelized. Fortunately, it is not generally necessary to order the entire chromosome in one pass. It is acceptable to partition the markers on a chromosome into $n$ groups, order each group separately and then merge the resulting groups together. Finer ordering can then be performed using the imputed founder alleles. 
 
 \section{Example}
 
