@@ -36,7 +36,7 @@
 \newcommand\commentFont[1]{\footnotesize\ttfamily{#1}}
 \SetCommentSty{commentFont}
 
-\author{Rohan Shah\\The University of Queensland, Brisbane\\Data 61 \And B. Emma Huang\\Janssen Research \& Development
+\author{Rohan Shah\\Data 61, Brisbane\\The University of Queensland, Brisbane \And B. Emma Huang\\Janssen Research \& Development
 }
 \Plainauthor{Rohan Shah, B. Emma Huang}
 \title{\pkg{mpMap2} and \pkg{mpMapInteractive2}: An R pipeline for genetic map construction}
@@ -120,7 +120,7 @@ Both the F2 and RIL are special cases of a more general biparental design, gener
 twoParentPedigree(initialPopulationSize, selfingGenerations, 
   nSeeds, intercrossingGenerations)
 \end{Code}
-Input \code{initialPopulationSize} is the number of crosses of the founders, which by assumption are all genetically identical. Input \code{intercrossingGenerations} is the number of generations of random intermating. Input \code{nSeeds} is the number of independent selfing lines generated from each individual after the random intermating. Inpu \code{selfingGenerations} is the number of generations of inbreeding by selfing. 
+Input \code{initialPopulationSize} is the number of crosses of the founders, which by assumption are all genetically identical. Input \code{intercrossingGenerations} is the number of generations of random intermating. Input \code{nSeeds} is the number of independent selfing lines generated from each individual after the random intermating. Input \code{selfingGenerations} is the number of generations of inbreeding by selfing. 
 
 \subsubsection{Four-parent pedigrees}
 
@@ -149,11 +149,15 @@ As an example of the functions provided so far, we simulate from two four-parent
 #Generate map
 map <- qtl::sim.map(len = rep(300, 2), n.mar = 301, anchor.tel = TRUE, include.x = FALSE, eq.spacing = TRUE)
 #Generate random funnels pedigree
-pedigreeRF <- fourParentPedigreeRandomFunnels(initialPopulationSize = 1000, nSeeds = 1, intercrossingGenerations = 1, selfingGenerations = 4)
+pedigreeRF <- fourParentPedigreeRandomFunnels(initialPopulationSize = 1000, nSeeds = 1, intercrossingGenerations = 1, selfingGenerations = 2)
+#Analysis pedigreeRF will assume finite generations of selfing (two)
+pedigreeRF@selfing <- "auto"
 #Prefix line names with RF
 pedigreeRF@lineNames <- paste0("RF", pedigreeRF@lineNames)
 #Generate single funnel pedigree
-pedigreeSF <- fourParentPedigreeSingleFunnel(initialPopulationSize = 1000, nSeeds = 1, intercrossingGenerations = 1, selfingGenerations = 4)
+pedigreeSF <- fourParentPedigreeSingleFunnel(initialPopulationSize = 1000, nSeeds = 1, intercrossingGenerations = 1, selfingGenerations = 2)
+#Analysis pedigreeSF will assume finite generations of selfing (two)
+pedigreeSF@selfing <- "auto"
 #Prefix line names with SF
 pedigreeSF@lineNames <- paste0("SF", pedigreeSF@lineNames)
 crossSingleFunnel <- simulateMPCross(map = map, pedigree = pedigreeSF, mapFunction = haldane, seed = 1)
@@ -189,18 +193,23 @@ Note that the summaries for both objects say that all markers are multiallelic. 
 crossSingleFunnel@geneticData[[1]]@founders[,1:5]
 crossSingleFunnel@geneticData[[1]]@hetData[["D1M1"]]
 @
-Observed values $1 - 4$ correspond to homozygotes for founder lines, and values $5 - 10$ correspond to different hetrozygotes. We specified $4$ generations of selfing and this is reflected in the distribution of observed values for the final population. 
+Observed values $1 - 4$ correspond to homozygotes for founder lines, and values $5 - 10$ correspond to different hetrozygotes. We specified $2$ generations of selfing and this is reflected in the distribution of observed values for the final population. 
 <<cache=TRUE>>=
 table(crossSingleFunnel@geneticData[[1]]@finals[,1])
 @
 
-The {\color{red}most common types of markers} (I think?) currently used are \emph{Single Nucleotide Polymorphism} (SNP) markers. To convert our simulated data objects to these types of markers, we combine them with a call to \code{multiparentSNP}. 
+The {\color{red}most common types of markers} (I think?) currently used are \emph{Single Nucleotide Polymorphism} (SNP) markers. To convert our simulated data objects to these types of markers, we combine them with a call to \code{multiparentSNP}. As the object \code{combined} contains multiple data sets, each one must be converted individually. 
 <<cache=TRUE>>=
-snpSingleFunnel <- crossSingleFunnel + multiparentSNP(keepHets = TRUE)
-snpSingleFunnel@geneticData[[1]]@founders[,1:5]
-snpSingleFunnel@geneticData[[1]]@hetData[["D1M1"]]
+combinedSNP <- combined
+combinedSNP@geneticData[[1]] <- combinedSNP@geneticData[[1]] + 
+    multiparentSNP(keepHets = TRUE)
+combinedSNP@geneticData[[2]] <- combinedSNP@geneticData[[2]] + 
+    multiparentSNP(keepHets = FALSE)
+combinedSNP@geneticData[[1]]@founders[, 1:5]
+combinedSNP@geneticData[[1]]@hetData[["D1M1"]]
+combinedSNP@geneticData[[2]]@hetData[["D1M1"]]
 @
-The founders in object \code{snpSingleFunnel} now have only two alleles ($0$ and $1$) for every marker, and a hetrozygote for the marker is coded as $2$. If \code{keepHets = FALSE} is specified hetrozygotes are replaced by \code{NA}. The corresponding function for biparental designs is \code{biparentalSNP}. 
+The founders in object \code{combinedSNP} now have only two alleles ($0$ and $1$) for every marker. In the first data set combinations of different marker alleles are coded as $2$. For the second data set we specified \code{keepHets = FALSE} so these marker hetrozygotes are replaced by \code{NA}. The corresponding function for biparental designs is \code{biparentalSNP}. 
 
 \section{Estimation of recombination fractions}
 
@@ -208,7 +217,7 @@ The founders in object \code{snpSingleFunnel} now have only two alleles ($0$ and
 
 For any pair of genetic locations there is a probability model govering the joint distribution of the sources of the inherited alleles. That is, a genotyped final line will have an allele at marker $M_1$ inherited from some founder line, and another allele at marker $M_2$ inherited from a (potentially different) founder line. We ignore the fact that different founders may have identical alleles; it is the source of the allele that is important. 
 
-These joint distributions are governed by the \emph{identity-by-descent} probabilities, which have been calculated for a variety of different designs \citep{Teuscher2007,Broman2005,Broman2012a,Broman2012b}. These probabilities are a function of the recombination fraction $r$ between the two markers. Several examples of relevant probability models are given in Appendix \ref{sec:ibd_models}. The relevant probabilities for more complicated designs (especially those with finite generations of selfing) are too complicated to give here, but can be calculated with the help of a computer algebra system such as Octave or Mathematica. 
+These joint distributions are governed by the \emph{identity-by-descent} (IBD) probabilities, which have been calculated for a variety of different designs \citep{Teuscher2007,Broman2005,Broman2012a,Broman2012b}. These probabilities are a function of the recombination fraction $r$ between the two markers. Several examples of relevant probability models are given in Appendix \ref{sec:ibd_models}. The relevant probabilities for more complicated designs (especially those with finite generations of selfing) are too complicated to give here, but can be calculated with the help of a computer algebra system such as Octave or Mathematica. 
 
 If two markers are fully informative, then the probability model is informative for the parameter $r$, which can be estimated using numerical maximum likelihood. However this may no longer be true when the markers are less informative. For example, assume we have a four-parent design with a single funnel and infinite generations of selfing, and markers $M_1$ and $M_2$ with the following distribution of marker alleles for the founders.
 <<echo=FALSE,cache=TRUE>>=
@@ -260,7 +269,7 @@ In this case the likelihood is approximately (but not exactly) flat. The marker 
 
 In theory we can test whether a pair of markers is non-informative by testing whether the derivative of the likelihood is identically zero. This was the approach originally used in \pkg{mpMap}, however it appears to only be practical for designs involving infinite generations of selfing, and \emph{cannot} be used to identify marker pairs that are approximately non-informative. For this reason it is necessary to use a numerical test for non-informative and approximately non-informative marker pairs. 
 
-The marker probabilities are computed for a large number of equally spaced values of $r$. Let $\lcu P_i(r) \rcu$ be the set of marker probabilities at some recombination value $r$. If there are recombination values $r_1$ and $r_2$ with $\abs{r_1 - r_2} > 0.06$ so that the $L^1$ distance $\sum_i \abs{P_i(r_1) - P_i(r_2)}$ is less than $0.003$, then the pair of markers will be declared uninformative. Although this heuristic is computationally expensive, it has the advantage of detecting both uninformative and approximately uninformative pairs of markers, as we will demonstrate in the next section. 
+The marker probabilities are computed for a large number of equally spaced values of $r$. Let $\lcu P_i(r) \rcu$ be the set of marker probabilities at some recombination value $r$. For a pair of SNP markers $i$ would take values in $\{\{0, 0\}, \{0, 1\}, \{1, 0\}, \{1, 1\}\}$. If there are recombination values $r_1$ and $r_2$ with $\abs{r_1 - r_2} > 0.06$ so that the $L^1$ distance $\sum_i \abs{P_i(r_1) - P_i(r_2)}$ is less than $0.003$, then the pair of markers will be declared uninformative. Although this heuristic is computationally expensive, it has the advantage of detecting both uninformative and approximately uninformative pairs of markers, as we will demonstrate in the next section. 
 
 \subsection{Implementation}
 
@@ -271,17 +280,83 @@ The signature of the function is
 estimateRF(object, recombValues, lineWeights, gbLimit = -1, keepLod = FALSE, 
     keepLkhd = FALSE, verbose = FALSE)
 \end{Code}
-Input \code{object} is an object of class \code{mpcross} and input \code{recombValues} is the set of recombination fraction values to test in the grid search. Input \code{lineWeights} allows correction for segregation distortion and is beyond the scope of this document, see \citet{Shah2014} for further details. Input \code{gbLimit} specifies the maximum amount of memory to be used during the comutation. Input \code{keepLod} and \code{keepLkhd}. Input \code{verbose} outputs diagnostic information such as the current progress, and the amount of memory used. 
+Input \code{object} is an object of class \code{mpcross} and input \code{recombValues} is the set of recombination fraction values to test in the grid search. Input \code{lineWeights} allows correction for segregation distortion and is beyond the scope of this document, see \citet{Shah2014} for further details. Input \code{gbLimit} specifies the maximum amount of memory to be used during the comutation. Input \code{keepLkhd} determines whether the value of the maximum likelihood is computed. Input \code{keepLod} determines whether the likelihood ratio statistic for testing the hypothesis $r \neq \frac{1}{2}$ is computed. Input \code{verbose} outputs diagnostic information such as the current progress, and the amount of memory used. 
 
-The value returned by the function is an object of class \code{mpcrossRF}. It has the same \code{geneticData} slot as the object of class \code{mpcross}, but also contains a slot named \code{rf} with the results of the computation. The main result is the matrix of recombination fraction estimates, which is stored in slot \code{@rf@theta}. If this was stored as a numeric matrix it would require hundreds of gigabytes of storage space for some data sets. Fortunately, this matrix is symmetric, and each entry is one of the values specified in input \code{recombValues}. This matrix is therefore stored as an object of class \code{rawSymmetricMatrix}, which stores each value in the upper triangle of the matrix as a single byte. Each byte is interpreted as the index into \code{recombValues} which gives the estimated value. This requires only $\frac{n(n+1)}{2}$ bytes of storage, a 16-fold reduction in storage requirements compared to the storage of a similar object in \pkg{mpMap}. The value of \code{0xff} is interpreted as being \code{NA}. This requires input \code{recombValues} to always have less than 256 values, but this is not a siginificant limitation. 
+The value returned by the function is an object of class \code{mpcrossRF}. It has the same \code{geneticData} slot as the object of class \code{mpcross}, but also contains a slot named \code{rf} with the results of the computation. The main result is the matrix of recombination fraction estimates, which is stored in slot \code{@rf@theta}. If this was stored as a numeric matrix it would require hundreds of gigabytes of storage space for some data sets. Fortunately, this matrix is symmetric, and each entry is one of the values specified in input \code{recombValues}. This matrix is therefore stored as an object of class \code{rawSymmetricMatrix}, which stores each value in the upper triangle of the matrix as a single byte. Each byte is interpreted as the index into \code{recombValues} which gives the estimated value. If $n$ is the number of markers we require only $\frac{n(n+1)}{2}$ bytes of storage, a 16-fold reduction in storage requirements compared to the storage of a similar object in \pkg{mpMap}. The value of \code{0xff} is interpreted as being \code{NA}. This requires input \code{recombValues} to always have less than 256 values, but this is not a siginificant limitation. 
+
+Inputs \code{keepLod} and \code{keepLkhd} instruct the function to return extra symmetric numeric matrices. The values contained in these matrices are not restricted to a small number of levels, so they are stored as objects of class \code{dspMatrix} (dense symmetric matrix in packed storage) from package \pkg{Matrix}. For large data sets the storage required for these matrices may cause problems.
 
 The intermediate stages of the computation require significantly more memory than the final result. It may be necessary to perform the computation of the recombination fraction matrix in parts to avoid running out of memory. Input \code{gbLimit} allows the user to specify the maximum amount of memory (in gigabytes) to be used at any one time.
 
+Our package makes more extensive use of lookup tables and pre-computation than \pkg{mpMap}. As a result we can analyse large data sets using only OpenMP multi-threading. Package \pkg{mpMap} required the use of much more complicated MPI or CUDA multi-threading to achieve acceptable performance, and this code was much harder to maintain and use. 
+
+To demonstrate this function, we apply it to the object \code{combined} which we created previously. In general option \code{verbose} would be set to \code{TRUE} or \code{FALSE}. In this case we need output suitable for a document, so we specify \code{progressStyle}, which is argument \code{style} to \code{txtProgressBar}. 
+<<cache=TRUE>>=
+rf <- estimateRF(object = combinedSNP, verbose = list(verbose=TRUE, 
+    progressStyle = 1))
+@
+
 \section{Construction of linkage groups}
+
+Partitioning the markers into linkage groups can be performed using the function \code{formGroups}. It has signature
+\begin{Code}
+formGroups(mpcrossRF, groups, clusterBy = "combined", method = "average",
+    preCluster = FALSE)
+\end{Code}
+Input \code{mpcrossRF} is an object of class \code{mpcrossRF}. Input \code{groups} is the number of linkage groups to construct. Input \code{clusterBy} is the choice of dissimilarity matrix to use for clustering. It can be either \code{"theta"} for the recombination fraction matrix, \code{"lod"} for the matrix of likelihood ratio test statistics, or \code{"combined"}. In the last case, let $\nabla$ be the minimum distance between any pair of recombination fraction values used for the numerical maximum likelihood step, let $\mathbf L$ be the matrix of likelihood ratio statistics, let $l$ be maximum of the values of $\mathbf L$ and let $\Theta$ be the matrix of recombination fractions. Then the dissimilarity matrix used in the \code{"combined"} case is 
+\begin{align*}
+\Theta + \frac{\mathbf L}{l} \nabla.
+\end{align*}
+Intuitively, this means that the values in $\mathbf L$ are used to break ties between equal values in $\Theta$. Input \code{method} is the choice of linkage method, and must be one of \code{"average"}, \code{"complete"} or \code{"single"}. 
 
 \section{Ordering of chromosomes}
 
 Ordering of chromosomes is performed using \emph{simulated annealing}. We use a simulated annealing method \citep{Brusco2005} known as \emph{Anti-Robinson seriation}. The implementation originally comes from the \pkg{seriation} package \citep{Hahsler2008}, and has been adapted to our data structures. Although it performs \emph{extremely} well on smaller data sets, it is prohibitively expensive on larger data sets, and cannot easily be parallelized. Fortunately, it is not generally necessary to order the entire chromosome in one pass. It is acceptable to partition the markers on a chromosome into $n$ groups, order each group separately and then merge the resulting groups together. Finer ordering can then be performed using the imputed founder alleles. 
+
+\section{Estimation of map distances}
+
+\section{Imputation of founder genotypes}
+
+Imputation of founder genotypes is performed by assuming a Hidden Markov Model (HMM) for the underlying genotypes. Strictly speaking this is incorrect, as the founder genotypes do not form a Markov Chain. For example, consider the biparental recombinant inbred design. \citet{Broman2005} gives the probability of the two-loci recombinant genotype AB as $\frac{r}{1+2 r}$ and the probabilities of the non-recombinant genotype AA as $\frac{1}{2(1 + 2r)}$. If the IBD genotypes formed a Markov Chain then the probability of the three equally spaced loci having the IBD genotype AAA would be 
+\begin{align*}
+2\left(\frac{1}{2(1 + 2r)}\right)^2. 
+\end{align*}
+This value is in fact \citep{Broman2005}
+\begin{align*}
+\frac{1 + 2 r  - 4 r^2 - 2 c r^2 + 4 c r^3}{2(1 + 2 r) (1 + 4 r - 4 c r^2)}, 
+\end{align*}
+where $c = r^{-2}\mathbb{P}\left(\mbox{double recombinant}\right)$. As shown in Figure \ref{fig:multipoint_approximation} the approximation is very good, especially over shorter genetic distances. Assuming that the IBD genotype forms a Markov Chain goverened by its two-locus probabilities is unlikely to cause any problems. The underlying genotypes can then be imputed using the Viterbi algorithm. 
+
+This imputation method is implemented by the function \code{imputeFounders}, which has signature
+\begin{Code}
+imputeFounders(mpcrossMapped)
+\end{Code}
+We can apply this function to the object \code{combinedSNP}, which contains two data sets. 
+<<cache = TRUE>>=
+mappedSNP <- new("mpcrossMapped", combinedSNP, map = map)
+imputed <- imputeFounders(mappedSNP)
+@
+As we originally specified the \code{selfing} slot to have value \code{"auto"}, the imputed values will contain hetrozygotes. The encoding of hetrozygotes is given in an entry named \code{key}. Comparing the imputed data to the original data (before the markers were converted to SNP markers) shows good agreement for the first data set, even for the hetrozygotes. 
+<<cache=TRUE>>=
+imputed@geneticData[[1]]@imputed@key
+table(imputed@geneticData[[1]]@imputed@data, combined@geneticData[[1]]@finals)
+@
+The pattern of imputation errors for the hetrozygotes makes sense; value $5$ is a hetrozygote of founders $1$ and $2$, and the most frequent imputation error is to classify it as a homozygote of founder $1$ or $2$. 
+
+For the second data set no hetrozygotes are imputed. This is because no hetrozygote markers were called, so hetrozygotes are either missing or consistent with being homozygotes, in which case the homozygote is always more likely. The only clue in the data is that missing values are always hetrozygotes in this case. We can therefore alter the model to include a probability of observing a missing value. Setting \code{hetrozygoteMissingProb} to $1$ and \code{homozygoteMissingProb} to $0.05$ gives acceptable results. 
+<<cache=TRUE>>=
+table(imputed@geneticData[[2]]@imputed@data, combined@geneticData[[2]]@finals)
+imputed <- imputeFounders(mappedSNP, hetrozygoteMissingProb = 1, 
+    homozygoteMissingProb = 0.05)
+table(imputed@geneticData[[2]]@imputed@data, combined@geneticData[[2]]@finals)
+@
+The miss-classifications still demonstrate the same problem to a lesser extent. Value $5$ is a hetrozygote of founders 1 and 2, and just under 50\% of these values are miss-classified as homozygotes of founders $1$ or $2$. 
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.2]{multipointApproximation.pdf}
+\caption{The true three-point probability of genotype AAA for a recombinant inbred line at three equally spaced locations, and the Markov Chain approximation. \label{fig:multipoint_approximation}}
+\end{figure}
 
 \section{Example}
 
