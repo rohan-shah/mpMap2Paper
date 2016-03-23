@@ -399,6 +399,8 @@ sum(diag(summary))/sum(summary)
 @
 \subsection{Real data}
 
+\subsection{Real data}
+
 \appendix
 
 \section{Probability models}
