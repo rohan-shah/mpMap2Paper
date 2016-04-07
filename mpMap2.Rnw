@@ -36,14 +36,14 @@
 \newcommand\commentFont[1]{\footnotesize\ttfamily{#1}}
 \SetCommentSty{commentFont}
 
-\author{Rohan Shah\\Data 61, Brisbane\\The University of Queensland, Brisbane \And B. Emma Huang\\Janssen Research \& Development
+\author{Rohan Shah\\Statistical Genetics \& Genomics\\Data 61, Brisbane\\\\School of Mathematics \& Physics\\The University of Queensland, Brisbane \And B. Emma Huang\\Janssen Research \& Development
 }
 \Plainauthor{Rohan Shah, B. Emma Huang}
-\title{\pkg{mpMap2} and \pkg{mpMapInteractive2}: An R pipeline for genetic map construction}
-\Plaintitle{mpMap2 and mpMapInteractive2: An R pipeline for genetic map construction}
+\title{\pkg{mpMap2}: An R pipeline for genetic map construction}
+\Plaintitle{mpMap2 : An R pipeline for genetic map construction}
 
 \Abstract{
-Multiparent crosses of recombinant inbred lines are now being commonly generated for major crop species. Analysis of these populations typically requires construction of a genetic map, a search for quantitative trait loci (QTL) and the imputation of underlying genotypes. These steps pose a significant computational and statistical challenge. Packages \pkg{mpMap2} and \pkg{mpMapInteractive2} provide a complete pipeline such an analysis of multi-parent populations with more than 100,000 markers. }
+Multiparent crosses of recombinant inbred lines are now being commonly generated for major crop species. Analysis of these populations typically requires construction of a genetic map, a search for quantitative trait loci (QTL) and the imputation of underlying genotypes. These steps pose a significant computational and statistical challenge. Package \pkg{mpMap2} provides a complete pipeline for the analysis of multi-parent populations with more than 100,000 markers. }
 
 \Keywords{Multiparent crosses, genetic map construction, qtl mapping, \proglang{C++}, \proglang{R}}
 \Plainkeywords{Network reliability, residual connectivity, Monte Carlo methods, R}
@@ -53,7 +53,7 @@ Multiparent crosses of recombinant inbred lines are now being commonly generated
   The University of Queensland\\
   Brisbane, Australia\\
   E-mail:\\
-  \email{Rohan.Shah@rohan-shah.com}\\
+  \email{Rohan.Shah@csiro.au}\\
 }
 
 \begin{document}
@@ -67,7 +67,7 @@ Multiparent recombinant inbred lines are a novel class of experimental design wh
 
 Existing software able to analyze multiparent designs includes \pkg{happy}, \pkg{qtl} and \pkg{mpMap} (the previous version of \pkg{mpMap2}). Packages \pkg{happy} and \pkg{qtl} are focused on qtl mapping, and do not provide the functionality necessary for map construction. Package \pkg{mpMap} provides map construction functionality for multiparent designs, but has significant limitations. Some of these limitations are computational, such as problems analysing the large data sets currently being generated. Others are statistical, such as the inability to model finite generations of selfing and residual hetrzygosity. 
 
-These limitations motivated the development of \pkg{mpMap2} and \pkg{mpMapInteractive2}. Our goals for \pkg{mpMap2} were
+These limitations motivated the development of \pkg{mpMap2}. Our goals for \pkg{mpMap2} were
 \begin{enumerate}
 \item To write functionality in \proglang{C++} where required. 
 \item To make use of the S4 object system, to enable easier integration of \proglang{C++} code.

@@ -1,0 +1,210 @@
+\pdfoutput=1
+\RequirePackage{fix-cm}
+\documentclass[10pt,a4paper]{article}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, setspace, eucal, mathrsfs}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{pdflscape}
+\usepackage{comment}
+\usepackage[nonumberlist]{glossaries}
+\usepackage{mathtools}
+\usepackage{bbm}
+\usepackage{natbib}
+\usepackage[ruled, vlined]{algorithm2e}
+\usepackage{hyperref}
+\usepackage{fancyvrb}
+
+\def\lcu{\left\{}
+\def\rcu{\right\}}
+\def\({\left(}
+\def\){\right)}
+\def\[{\left[}
+\def\]{\right]}
+\def\<{\left<}
+\def\>{\right>}
+\def\lmid{\;\middle\vert\;}
+
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
+
+\def\E{\mathbb{E}}
+\def\P{\mathbb{P}}
+\newcommand{\abs}[1]{\left| #1 \right|}
+\newcommand{\eqdef}{\,{\buildrel \mathrm{def} \over =}\,}
+
+\newcommand{\pkg}[1]{{\fontseries{b}\selectfont #1}}
+\let\proglang=\textsf
+\let\code=\texttt
+\DefineVerbatimEnvironment{Code}{Verbatim}{}
+\topmargin 0pt
+\textheight 46\baselineskip
+\advance\textheight by \topskip
+\oddsidemargin 0.1in
+\evensidemargin 0.15in
+\marginparwidth 1in
+\oddsidemargin 0.125in
+\evensidemargin 0.125in
+\marginparwidth 0.75in
+\textwidth 6.125in
+
+\newcommand\commentFont[1]{\footnotesize\ttfamily{#1}}
+\SetCommentSty{commentFont}
+
+\author{Rohan Shah\\Statistical Genetics \& Genomics\\Data 61, Brisbane\\\\School of Mathematics \& Physics\\The University of Queensland, Brisbane \And B. Emma Huang\\Janssen Research \& Development
+}
+\title{\pkg{mpMap2}: An R pipeline for genetic map construction}
+
+\begin{document}
+
+\section{R/mpMap2}
+<<echo=FALSE, include=FALSE>>=
+library(mpMap2)
+library(qtl)
+@
+Multiparent recombinant inbred lines are a novel class of experimental design where the genotypes of the final progeny are mosaics of the genotypes of the $2^n$ recombinant inbred founder lines. These designs have found recent application in Arabadopsis, barley, maize, rice, tomatoes and wheat. Analysis of these populations typically requires construction of a genetic map as a first step towards searching for quantitative trait loci (QTL). Map construction can pose significant computational and statistical challenges in these populations. 
+
+Existing software able to analyze multiparent designs includes \pkg{happy} \citep{happy}, \pkg{qtl} \citep{qtl} and \pkg{mpMap} (the previous version of \pkg{mpMap2}). Packages \pkg{happy} and \pkg{qtl} are focused on qtl mapping, and do not provide the functionality necessary for map construction. Package \pkg{mpMap} provides map construction functionality for multiparent designs, but has significant limitations. Some of these limitations are computational, such as problems analyzing the large data sets currently being generated. Others are statistical, such as the inability to model finite generations of selfing.
+
+These limitations motivated the development of \pkg{mpMap2}. Our goals for \pkg{mpMap2} were
+\begin{enumerate}
+\item To extend the package to biparental and 16-parent populations. 
+\item To allow for finite generations of selfing and residual heterozygosity. 
+\item To allow the simultaneous use of multiple experiments in the construction of a single map. 
+\end{enumerate}
+
+\section{Experimental designs}
+
+We first outline the most general experimental design that we wish to be able to analyze. We have $2^n$ inbred founder lines which are combined over the first $n$ generations, resulting in a line whose genetic material is a mosaic of the original $2^n$ founders. 
+
+After the first $n$ generations there is some number of generations of random intermating, and some number of generations of inbreeding by selfing. One complication is that different orders of the founders in the initial cross result in genetically different individuals at the $n$th generation. The initial crosses are known as \emph{funnels}. Two cases are mathematically tractable. In the first only one funnel is ever used and in the second every funnel is chosen at random.
+
+\section{Simulation}
+
+\subsection{Pedigrees}
+
+Package \pkg{mpMap2} provides code for the generation of a large number of pedigrees. The two simplest biparental design functions are \code{rilPedigree} which generates a biparental RIL pedigree, and \code{f2Pedigree} which generates an F2 population. The pedigree object has a slot \code{selfing} that controls whether heterozygosity will be modeled during analysis. 
+
+The functions for simulation of four parent designs are \code{fourParentPedigreeSingleFunnel} and \code{fourParentPedigreeRandomFunnels}. In the first case only the funnel $\{A, B, C, D\}$ is used. In the second case each individual is drawn from a randomly chosen funnel. Similar functions are provided for the eight- and sixteen-parent designs.
+
+\subsection{Genotypes}
+
+Once a pedigree has been created, function \code{simulateMPCross} can be used to generate data. As an example we simulate from two four-parent designs of $1000$ individuals, with one generation of intercrossing and four generations of selfing. One set of simulated data uses randomly chosen funnels, while the other uses a single funnel. There are $2$ chromosomes of length $300$ cM, each of which has 301 equally spaced markers. 
+<<tidy=TRUE, tidy.opts=list(width.cutoff=56),cache=TRUE>>=
+#Generate map
+map <- qtl::sim.map(len = rep(300, 2), n.mar = 301, include.x = FALSE, eq.spacing = TRUE)
+#Generate random funnels pedigree
+pedigreeRF <- fourParentPedigreeRandomFunnels(initialPopulationSize = 1000, intercrossingGenerations = 1, selfingGenerations = 2)
+#Assume finite generations of selfing for pedigreeRF
+pedigreeRF@selfing <- "finite"
+#Prefix line names with RF
+pedigreeRF@lineNames <- paste0("RF", pedigreeRF@lineNames)
+#Generate single funnel pedigree
+pedigreeSF <- fourParentPedigreeSingleFunnel(initialPopulationSize = 1000, intercrossingGenerations = 1, selfingGenerations = 2)
+#Assume finite generations of selfing for pedigreeSF
+pedigreeSF@selfing <- "finite"
+#Prefix line names with SF
+pedigreeSF@lineNames <- paste0("SF", pedigreeSF@lineNames)
+crossSingleFunnel <- simulateMPCross(map = map, pedigree = pedigreeSF, mapFunction = haldane, seed = 1)
+crossRandomFunnels <- simulateMPCross(map = map, pedigree = pedigreeRF, mapFunction = haldane, seed = 1)
+@
+The simulated cross object has a single entry named \code{geneticData}, which is a list of S4 objects of class \code{geneticData}. This allows \code{mpcross} objects to contain data from multiple experiments. Experiments can be combined using the addition operator to give a single object containing data from both. 
+<<cache=TRUE>>=
+combined <- crossSingleFunnel + crossRandomFunnels
+c(length(crossSingleFunnel@geneticData), length(combined@geneticData))
+@
+When simulating data using \code{simulateMPCross} all markers are generated as fully informative (including all heterozygotes, which are simulated as being distinguishable). Observed values $1 - 4$ correspond to homozygotes and values $5 - 10$ correspond to different heterozygotes. We specified $2$ generations of selfing and this is reflected in the distribution of observed values.
+<<cache=TRUE>>=
+table(crossSingleFunnel@geneticData[[1]]@finals[,1])
+@
+\emph{Single Nucleotide Polymorphism} (SNP) markers are a common type of marker. To convert our simulated data objects to these types of markers, we use function \code{multiparentSNP}. 
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+combinedSNP <- combined
+combinedSNP@geneticData[[1]] <- combinedSNP@geneticData[[1]] + multiparentSNP(keepHets = TRUE)
+combinedSNP@geneticData[[2]] <- combinedSNP@geneticData[[2]] + multiparentSNP(keepHets = FALSE)
+@
+The founders in object \code{combinedSNP} now have only two alleles ($0$ and $1$) for every marker. In the first data set combinations of different marker alleles are coded as $2$. For the second data set we specified \code{keepHets = FALSE} so these marker heterozygotes are replaced by \code{NA}. 
+
+\section{Estimation of recombination fractions}
+
+\subsection{Methodology}\label{subsec:estimation_rf_methodology}
+
+For any pair of genetic locations there is a probability model for the joint distribution of the sources of the inherited alleles. That is, a genotyped final line will have alleles at marker $M_1$ inherited from some founder lines, and alleles at $M_2$ inherited from potentially different founder lines. We ignore the fact that different founders may have identical alleles; it is the source of the allele that is important. 
+
+These joint distributions are governed by the \emph{identity-by-descent} (IBD) probabilities, which have been calculated for a variety of different designs \citep{Teuscher2007,Broman2005,Broman2012a,Broman2012b}. These probabilities are a function of the recombination fraction $r$ between the two markers. Computing the probabilities for more complicated designs requires a computer algebra system such as Octave.
+
+In some cases the probability models are uninformative for the parameter $r$. We perform a numerical test to identify these cases. The marker probabilities are computed for a large number of equally spaced values of $r$. Let $\lcu P_i(r) \rcu$ be the set of marker probabilities at some recombination value $r$. If there are recombination values $r_1$ and $r_2$ with $\abs{r_1 - r_2} > 0.06$ so that the $L^1$ distance $\sum_i \abs{P_i(r_1) - P_i(r_2)}$ is less than $0.003$, then the pair of markers will be declared uninformative. This heuristic can detect both uninformative and approximately uninformative pairs of markers.
+
+\subsection{Implementation}
+
+The function \code{estimateRF} estimates the recombination fractions between all pairs of markers in an \code{mpcross} object using numerical maximum likelihood and a simple grid search. It accounts for all the data sets contained in the object when performing the estimation, and returns \code{NA} where the relevant probability model is uninformative or approximately uninformative. 
+
+Function \code{estimateRF} has four main options. Input \code{recombValues} is the set of recombination fraction values to test in the grid search. Input \code{gbLimit} specifies the maximum amount of memory to be used during the comutation. Input \code{verbose} outputs diagnostic information such as the current progress, and the amount of memory used. 
+
+The value returned by the function is an object of class \code{mpcrossRF} which contains the recombination fraction matrix in slot \code{rf}. This matrix is symmetric, so it is possible to store each value in the upper triangle as a single byte. This gives a 16-fold reduction in storage requirements compared to the storage of a similar object in \pkg{mpMap}. 
+
+\section{Construction of linkage groups}
+
+Partitioning the markers into linkage groups using hierarchical clustering can be performed using the function \code{formGroups}. This function has two main options. Input \code{groups} is the number of linkage groups to construct. Input \code{method} is the choice of linkage method, and must be one of \code{"average"}, \code{"complete"} or \code{"single"}. 
+
+\section{Ordering of chromosomes}
+
+Ordering of chromosomes is performed using \emph{simulated annealing}. We use a simulated annealing method \citep{Brusco2005} known as \emph{Anti-Robinson seriation}. The implementation originally comes from the \pkg{seriation} package \citep{Hahsler2008}, and has been adapted to our data structures. 
+
+\section{Estimation of map distances}
+
+Once the markers are ordered, marker distances are estimated by the function \code{estimateMap}. Internally we use the \pkg{nnls} \citep{nnls} package to estimate marker distance based on non-linear least squares. 
+
+\section{Imputation of founder genotypes}
+
+Imputation of founder genotypes is performed by assuming a Hidden Markov Model (HMM) for the underlying genotypes. Strictly speaking this is incorrect, as the founder genotypes do not form a Markov Chain. For example, consider the biparental recombinant inbred design. \citet{Broman2005} gives the probability of the two-loci recombinant genotype AB as $\frac{r}{1+2 r}$ and the probability of AA as $\frac{1}{2(1 + 2r)}$. If the IBD genotypes formed a Markov Chain then the probability of the three equally spaced loci having the IBD genotype AAA would be $\frac{1}{2}(1 + 2r)^{-2}$. 
+This value is in fact \citep{Broman2005}
+\begin{align*}
+\frac{1 + 2 r  - 4 r^2 - 2 c r^2 + 4 c r^3}{2(1 + 2 r) (1 + 4 r - 4 c r^2)}, 
+\end{align*}
+where $c = r^{-2}\mathbb{P}\left(\mbox{double recombinant}\right)$. The difference between these two expressions is small, so the underlying genotypes can be imputed using the Viterbi algorithm. This imputation method is implemented by the function \code{imputeFounders}, which returns its values in the \code{imputed} slot of the \code{geneticData} class. 
+
+\section{Example}
+
+We give an example showing that \pkg{mpMap2} can construct correct maps from unusual experimental designs. In this case we use an eight-parent cross with randomly chosen funnels and no intercrossing and no selfing. The underlying genotypes for this design are all heterozygotes. 
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+pedigree <- eightParentPedigreeRandomFunnels(initialPopulationSize = 1000, intercrossingGenerations = 0, selfingGenerations = 0)
+pedigree@selfing <- "finite"
+map <- qtl::sim.map(len = rep(300, 3), n.mar = 101, include.x = FALSE, eq.spacing = FALSE)
+cross <- simulateMPCross(pedigree = pedigree, map = map, mapFunction = haldane, seed = 1)
+crossSNP <- cross + multiparentSNP(keepHets=TRUE)
+table(cross@geneticData[[1]]@finals)
+@
+The next step is estimation of the recombination fractions. This step is somewhat slow due to the amount of precalculation required. This computational cost does not grow with the total number of markers or lines.
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+#Randomly rearrange markers
+crossSNP <- subset(crossSNP, markers = sample(markers(cross)))
+rf <- estimateRF(crossSNP, verbose = list(verbose = TRUE, progressStyle = 1))
+@
+The next steps are forming linkage groups, ordering chromosomes and imputing missing recombination fraction values.
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=60), results="hide">>=
+grouped <- formGroups(rf, groups = 3, method = "average", clusterBy="theta")
+ordered <- orderCross(grouped)
+imputedTheta <- impute(ordered, verbose = list(verbose = TRUE, progressStyle = 1))
+@
+We can now estimate the map. We use the \code{jitterMap} function to space out markers that have been assigned to the same location. 
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=45)>>=
+estimatedMap <- estimateMap(imputedTheta, maxOffset = 10)
+estimatedMap <- jitterMap(estimatedMap)
+#pair estimated and original chromosomes
+estimatedChromosomes <- sapply(1:3, function(x) which.max(unlist(lapply(estimatedMap, function(y) length(intersect(names(y), names(map[[x]])))))))
+tail(estimatedMap[[estimatedChromosomes[[1]]]])
+tail(map[[1]])
+@
+The reason for constructing a genetic map is often to search for quantitative trait loci (QTL). Therefore it is not the overall length that is important, but the accurate imputation of the underlying founder genotypes. The imputation is highly accurate given that there are $28$ possible genotypes, with a correct imputation rate of just over 80\%.
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=60)>>=
+mappedObject <- new("mpcrossMapped", imputedTheta, map = estimatedMap)
+imputedFounders <- imputeFounders(mappedObject)
+summary <- table(imputedFounders@geneticData[[1]]@imputed@data[,markers(cross)], cross@geneticData[[1]]@finals)
+sum(diag(summary))/sum(summary)
+@
+
+\bibliographystyle{jss}
+\bibliography{./extendedAbstract}
+\end{document}
