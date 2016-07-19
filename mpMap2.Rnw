@@ -65,7 +65,7 @@ library(qtl)
 @
 Multiparent recombinant inbred lines are a novel class of experimental design where the genotypes of the final progeny are mosaics of the genotypes of the $2^n$ recombinant inbred founder lines. These designs have found recent application in mice \citep{Churchill2004}, Arabadopsis \citep{Kover2009}, barley \citep{Sannemann2015}, maize, rice, tomatoes \citep{Pascual2015} and wheat \citep{Huang2012, Mackay2014}. 
 
-Existing software able to analyze multiparent designs includes \pkg{happy}, \pkg{qtl} and \pkg{mpMap} (the previous version of \pkg{mpMap2}). Packages \pkg{happy} and \pkg{qtl} are focused on qtl mapping, and do not provide the functionality necessary for map construction. Package \pkg{mpMap} provides map construction functionality for multiparent designs, but has significant limitations. Some of these limitations are computational, such as problems analysing the large data sets currently being generated. Others are statistical, such as the inability to model finite generations of selfing and residual hetrzygosity. 
+Existing software able to analyze multiparent designs includes \pkg{happy}, \pkg{qtl} and \pkg{mpMap} (the previous version of \pkg{mpMap2}). Packages \pkg{happy} and \pkg{qtl} are focused on qtl mapping, and do not provide the functionality necessary for map construction. Package \pkg{mpMap} provides map construction functionality for multiparent designs, but has significant limitations. Some of these limitations are computational, such as problems analysing the large data sets currently being generated. Others are statistical, such as the inability to model finite generations of selfing and residual heterozygosity. 
 
 These limitations motivated the development of \pkg{mpMap2}. Our goals for \pkg{mpMap2} were
 \begin{enumerate}
@@ -151,15 +151,15 @@ map <- qtl::sim.map(len = rep(300, 2), n.mar = 301, anchor.tel = TRUE, include.x
 #Generate random funnels pedigree
 pedigreeRF <- fourParentPedigreeRandomFunnels(initialPopulationSize = 1000, nSeeds = 1, intercrossingGenerations = 1, selfingGenerations = 2)
 #Analysis pedigreeRF will assume finite generations of selfing (two)
-pedigreeRF@selfing <- "finite"
+selfing(pedigreeRF) <- "finite"
 #Prefix line names with RF
-pedigreeRF@lineNames <- paste0("RF", pedigreeRF@lineNames)
+lineNames(pedigreeRF) <- paste0("RF", lineNames(pedigreeRF))
 #Generate single funnel pedigree
 pedigreeSF <- fourParentPedigreeSingleFunnel(initialPopulationSize = 1000, nSeeds = 1, intercrossingGenerations = 1, selfingGenerations = 2)
 #Analysis pedigreeSF will assume finite generations of selfing (two)
-pedigreeSF@selfing <- "finite"
+selfing(pedigreeSF) <- "finite"
 #Prefix line names with SF
-pedigreeSF@lineNames <- paste0("SF", pedigreeSF@lineNames)
+lineNames(pedigreeSF) <- paste0("SF", lineNames(pedigreeSF))
 crossSingleFunnel <- simulateMPCross(map = map, pedigree = pedigreeSF, mapFunction = haldane, seed = 1)
 crossRandomFunnels <- simulateMPCross(map = map, pedigree = pedigreeRF, mapFunction = haldane, seed = 1)
 @
@@ -188,24 +188,31 @@ print(crossSingleFunnel)
 print(combined)
 @
 
-Note that the summaries for both objects say that all markers are multiallelic. When simulating data using \code{simulateMPCross} all markers are generated as fully informative (including all hets, which are simulated as being distinguishable). We can see this by inspecting the contained objects of class \code{geneticData}. Slot \code{founders} contains data about the founder alleles, and slot \code{hetData} determines how heterozygotes are mapped to observed values. In the case of the data we have generated so far, each founder has a unique allele, and all heterozygotes are distinct. 
+Note that the summaries for both objects say that all markers are multiallelic. When simulating data using \code{simulateMPCross} all markers are generated as fully informative (including all heterozygotes, which are simulated as being distinguishable). 
+
+We can see this by inspecting the contained objects of class \code{geneticData}. Slot \code{founders} contains data about the founder alleles, and slot \code{hetData} determines how heterozygotes are mapped to observed values. In the case of the data we have generated so far, each founder has a unique allele, and all heterozygotes are distinct. If an \code{mpcross} object contains only a single data set, then functions \code{founders} and \code{hetData} can be used to easily inspect these aspects of the data. 
 <<cache=TRUE>>=
-crossSingleFunnel@geneticData[[1]]@founders[,1:5]
-crossSingleFunnel@geneticData[[1]]@hetData[["D1M1"]]
+#Equivalent to crossSingleFunnel@geneticData[[1]]@founders[,1:5]
+founders(crossSingleFunnel)[,1:5]
+#Equivalent to crossSingleFunnel@geneticData[[1]]@hetData[["D1M1"]]
+hetData(crossSingleFunnel, "D1M1")
 @
 Observed values $1 - 4$ correspond to homozygotes for founder lines, and values $5 - 10$ correspond to different heterozygotes. We specified $2$ generations of selfing and this is reflected in the distribution of observed values for the final population. 
 <<cache=TRUE>>=
-table(crossSingleFunnel@geneticData[[1]]@finals[,1])
+table(finals(crossSingleFunnel)[,1])
 @
 
-The most common types of markers currently used are \emph{Single Nucleotide Polymorphism} (SNP) markers. To convert our simulated data objects to these types of markers, we combine them with a call to \code{multiparentSNP}. As the object \code{combined} contains multiple data sets, each one must be converted individually. 
+The most common types of markers currently used are \emph{Single Nucleotide Polymorphism} (SNP) markers. To convert our simulated data objects to these types of markers, we combine them with a call to \code{multiparentSNP}. 
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+combinedSNP <- combined + multiparentSNP(keepHets = TRUE)
+@
+This modification can also be applied on a per-dataset basis. 
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 combinedSNP <- combined
 combinedSNP@geneticData[[1]] <- combinedSNP@geneticData[[1]] + multiparentSNP(keepHets = TRUE)
 combinedSNP@geneticData[[2]] <- combinedSNP@geneticData[[2]] + multiparentSNP(keepHets = FALSE)
-combinedSNP@geneticData[[1]]@founders[, 1:5]
-combinedSNP@geneticData[[1]]@hetData[["D1M1"]]
-combinedSNP@geneticData[[2]]@hetData[["D1M1"]]
+founders(combinedSNP@geneticData[[1]])[, 1:5]
+hetData(combinedSNP, "D1M1") 
 @
 The founders in object \code{combinedSNP} now have only two alleles ($0$ and $1$) for every marker. In the first data set combinations of different marker alleles are coded as $2$. For the second data set we specified \code{keepHets = FALSE} so these marker heterozygotes are replaced by \code{NA}. The corresponding function for biparental designs is \code{biparentalSNP}. 
 
@@ -284,7 +291,7 @@ Input \code{object} is an object of class \code{mpcross} and input \code{recombV
 
 The value returned by the function is an object of class \code{mpcrossRF}. It has the same \code{geneticData} slot as the object of class \code{mpcross}, but also contains a slot named \code{rf} with the results of the computation. The main result is the matrix of recombination fraction estimates, which is stored in slot \code{@rf@theta}. If this was stored as a numeric matrix it would require hundreds of gigabytes of storage space for some data sets. Fortunately, this matrix is symmetric, and each entry is one of the values specified in input \code{recombValues}. This matrix is therefore stored as an object of class \code{rawSymmetricMatrix}, which stores each value in the upper triangle of the matrix as a single byte. Each byte is interpreted as the index into \code{recombValues} which gives the estimated value. If $n$ is the number of markers we require only $\frac{n(n+1)}{2}$ bytes of storage, a 16-fold reduction in storage requirements compared to the storage of a similar object in \pkg{mpMap}. The value of \code{0xff} is interpreted as being \code{NA}. This requires input \code{recombValues} to always have less than 256 values, but this is not a siginificant limitation. 
 
-Inputs \code{keepLod} and \code{keepLkhd} instruct the function to return extra symmetric numeric matrices. The values contained in these matrices are not restricted to a small number of levels, so they are stored as objects of class \code{dspMatrix} (dense symmetric matrix in packed storage) from package \pkg{Matrix}. For large data sets the storage required for these matrices may cause problems.
+Input \code{keepLod} instructs the function to compute the matrix of likelihood ratio statistics for testing whether the recombination fractions are different from $\frac{1}{2}$. Input \code{keepLkhd} instructs the function to return the maximum value of the likelihood for every pair of markers. The values contained in these extra symmetric matrices are not restricted to a small number of levels, so they are stored as objects of class \code{dspMatrix} (dense symmetric matrix in packed storage) from package \pkg{Matrix}. These matrices require $4 n (n + 1)$ bytes of storage, which becomes infeasible very quickly. For example, with $n = 10^5$ markers each of these matrices occupy $40$ gb. In generaly we suggest that these matrices \emph{not} be computed. 
 
 The intermediate stages of the computation require significantly more memory than the final result. It may be necessary to perform the computation of the recombination fraction matrix in parts to avoid running out of memory. Input \code{gbLimit} allows the user to specify the maximum amount of memory (in gigabytes) to be used at any one time.
 
@@ -299,14 +306,16 @@ rf <- estimateRF(object = combinedSNP, verbose = list(verbose=TRUE, progressStyl
 
 Partitioning the markers into linkage groups can be performed using the function \code{formGroups}. It has signature
 \begin{Code}
-formGroups(mpcrossRF, groups, clusterBy = "combined", method = "average",
+formGroups(mpcrossRF, groups, clusterBy = "theta", method = "average",
     preCluster = FALSE)
 \end{Code}
-Input \code{mpcrossRF} is an object of class \code{mpcrossRF}. Input \code{groups} is the number of linkage groups to construct. Input \code{clusterBy} is the choice of dissimilarity matrix to use for clustering. It can be either \code{"theta"} for the recombination fraction matrix, \code{"lod"} for the matrix of likelihood ratio test statistics, or \code{"combined"}. In the last case, let $\nabla$ be the minimum distance between any pair of recombination fraction values used for the numerical maximum likelihood step, let $\mathbf L$ be the matrix of likelihood ratio statistics, let $l$ be maximum of the values of $\mathbf L$ and let $\Theta$ be the matrix of recombination fractions. Then the dissimilarity matrix used in the \code{"combined"} case is 
+Input \code{mpcrossRF} is an object of class \code{mpcrossRF}. Input \code{groups} is the number of linkage groups to construct. Input \code{method} is the choice of linkage method, and must be one of \code{"average"}, \code{"complete"} or \code{"single"}. Input \code{clusterBy} is the choice of dissimilarity matrix to use for clustering. It can be either \code{"theta"} for the recombination fraction matrix, \code{"lod"} for the matrix of likelihood ratio test statistics, or \code{"combined"}. In the last case, let $\nabla$ be the minimum distance between any pair of recombination fraction values used for the numerical maximum likelihood step, let $\mathbf L$ be the matrix of likelihood ratio statistics, let $l$ be maximum of the values of $\mathbf L$ and let $\Theta$ be the matrix of recombination fractions. Then the dissimilarity matrix used in the \code{"combined"} case is 
 \begin{align*}
 \Theta + \frac{\mathbf L}{l} \nabla.
 \end{align*}
-Intuitively, this means that the values in $\mathbf L$ are used to break ties between equal values in $\Theta$. Input \code{method} is the choice of linkage method, and must be one of \code{"average"}, \code{"complete"} or \code{"single"}. 
+Intuitively, this means that the values in $\mathbf L$ are used to break ties between equal values in $\Theta$. We emphasise that specifying \code{"combined"} or \code{"lod"} for input \code{clusterBy} requires the matrix of likelihood ratio statistics to be computed using \emph{estimateRF}, and as mentioned this may require an infeasible amount of storage. 
+
+Internally \code{formGroups} uses hierarcichal clustering, and this requires that the full dissimilarity matrix be stored in memory (as opposed to in a compressed form, such as an object of type \code{rawSymmetricMatrix}). This means that if there are a large number of markers \code{formGroups} may require a large amount of working memory. Specifying \code{preCluster = TRUE} attempts to reduce the amount of memory required by identifying groups of markers where the recombination fractions between them are all zero. These markers are grouped before the hierarchical clustering is performed, reducing the dimension of the dissimilarity matrix and therefore the required working memory. 
 
 \section{Ordering of chromosomes}
 
@@ -363,11 +372,11 @@ The miss-classifications still demonstrate the same problem to a lesser extent. 
 We begin with an example showing that \pkg{mpMap2} can construct correct maps from unusual experimental designs. In this case we use an eight-parent cross with randomly chosen funnels and no intercrossing and no selfing. The underlying genotypes for this design are all heterozygotes. 
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 pedigree <- eightParentPedigreeRandomFunnels(initialPopulationSize = 1000, intercrossingGenerations = 0, selfingGenerations = 0, nSeeds = 1)
-pedigree@selfing <- "finite"
+selfing(pedigree) <- "finite"
 map <- qtl::sim.map(len = rep(300, 3), n.mar = 101, anchor.tel = TRUE, include.x = FALSE, eq.spacing = FALSE)
 cross <- simulateMPCross(pedigree = pedigree, map = map, mapFunction = haldane, seed = 1)
 crossSNP <- cross + multiparentSNP(keepHets=TRUE)
-table(cross@geneticData[[1]]@finals)
+table(finals(cross))
 @
 The estimation of recombination fractions is somewhat slow due to the amount of precalculation, as every distinct funnel is treated separately. This precalculation cost does not grow with the total number of markers.
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
