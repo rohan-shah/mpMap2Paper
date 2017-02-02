@@ -136,6 +136,28 @@ fourParentPedigreeSingleFunnel(initialPopulationSize, selfingGenerations,
 
 The functions for generating eight and sixteen parent designs have identical signatures and similar names, except with \code{four} replaced with \code{eight} or \code{sixteen}. 
 
+\subsubsection{Visualising the pedigree}
+
+It can be useful to examine the pedigree as a directed graph. This can be done using function \code{pedigreeToGraph}. 
+<<tidy=TRUE,tidy.opts=list(width.cutoff=50),cache=TRUE,out.width='50%',fig.align='center'>>=
+pedigree <- fourParentPedigreeRandomFunnels(initialPopulationSize = 3, selfingGenerations = 1, intercrossingGenerations = 2, nSeeds = 1)
+plot(pedigreeToGraph(pedigree))
+@
+
+\subsubsection{Inputting pedigrees}
+
+Pedigrees from experiments can be input into mpMap2 using the \code{pedigree} function. 
+\begin{code}
+pedigree(lineNames, mother, father, selfing, warnImproperFunnels = TRUE)
+\end{code}
+Input \code{lineNames} contains the names of the lines in the pedigree. Inputs \code{mother} and \code{father} are integer vectors giving the indices of the parents within \code{lineNames}.
+ For example, consider the following pedigree with three founder lines.
+<<tidy=TRUE,tidy.opts=list(width.cutoff=50),cache=TRUE,out.width='50%',fig.align='center'>>=
+p <- mpMap2::pedigree(lineNames = c("A", "B", "C", "F1_1", "F1_2", "F1_3", "F1_4", "F2_1", "F2_2", "F3"), mother = c(0, 0, 0, 1, 1, 1, 2, 4, 6, 8), father = c(0, 0, 0, 2, 2, 3, 3, 5, 7, 9), selfing = "finite")
+plot(pedigreeToGraph(p))
+@
+This pedigree will be recognised as a special case of the eight-parent design where the founders are repeated within a funnel, and can be used for map construction. 
+
 \subsection{Genotypes}
 
 Once a pedigree has been created it can be used to generate genetic data. Note that for simulation of genotypes the pedigree is not restricted to those listed above, and arbitrary pedigrees are allowed. The signature of the simulation function is
@@ -145,7 +167,7 @@ simulateMPCross(map, pedigree, mapFunction, seed).
 Input \code{map} is a genetic map object in the format used by package \pkg{qtl}. Input \code{pedigree} is a pedigree object and input \code{mapFunction} is a function that converts centiMorgan distances into recombination fractions. The two suggested values are \code{haldane} and \code{kosambi}. Input \code{seed} is the random seed used for random number generation in the simulation of the genetic data. The output is an S4 object of class \code{mpcross}. 
 
 As an example of the functions provided so far, we simulate from two four-parent designs of $1000$ individuals with one generation of intercrossing and four generations of selfing. One set of simulated data uses randomly chosen funnels, while the other uses a single funnel. The same genetic map is used in both cases; there are $2$ chromosomes of length $300$ cM, each of which has 301 equally spaced markers. 
-<<tidy=TRUE, tidy.opts=list(width.cutoff=56),cache=TRUE>>=
+<<tidy=TRUE, tidy.opts=list(width.cutoff=50),cache=TRUE>>=
 #Generate map
 map <- qtl::sim.map(len = rep(300, 2), n.mar = 301, anchor.tel = TRUE, include.x = FALSE, eq.spacing = TRUE)
 #Generate random funnels pedigree
@@ -185,15 +207,15 @@ A summary of an \code{mpcross} object is generated using the print function.
 
 <<cache=TRUE>>=
 print(crossSingleFunnel)
-print(combined)
 @
 
-Note that the summaries for both objects say that all markers are multiallelic. When simulating data using \code{simulateMPCross} all markers are generated as fully informative (including all heterozygotes, which are simulated as being distinguishable). 
-
-We can see this by inspecting the contained objects of class \code{geneticData}. Slot \code{founders} contains data about the founder alleles, and slot \code{hetData} determines how heterozygotes are mapped to observed values. In the case of the data we have generated so far, each founder has a unique allele, and all heterozygotes are distinct. If an \code{mpcross} object contains only a single data set, then functions \code{founders} and \code{hetData} can be used to easily inspect these aspects of the data. 
+Note that the summary says that all markers are multiallelic. When simulating data using \code{simulateMPCross} all markers are generated as fully informative (including all heterozygotes, which are simulated as being distinguishable). We can see this by inspecting the contained objects of class \code{geneticData}. Slot \code{founders} contains data about the founder alleles. The founders data can be accessed by the helper function \code{founders}. 
 <<cache=TRUE>>=
 #Equivalent to crossSingleFunnel@geneticData[[1]]@founders[,1:5]
 founders(crossSingleFunnel)[,1:5]
+@
+Slot \code{hetData} determines how heterozygotes are mapped to observed values. In the case of the data we have generated so far, each founder has a unique allele, and all heterozygotes are distinct. Heterozygote data for a marker is formatted in three columns. The first and second are marker alleles, and the third is the encoding of that combination of marker alleles. It is required that a homozygote for a marker allele $m$ be encoded as $m$. For example, a row containing $1, 1, 0$ is invalid. Helper function \code{hetData} can be used to access the heterozygote data. 
+<<cache=TRUE>>=
 #Equivalent to crossSingleFunnel@geneticData[[1]]@hetData[["D1M1"]]
 hetData(crossSingleFunnel, "D1M1")
 @
@@ -203,11 +225,11 @@ table(finals(crossSingleFunnel)[,1])
 @
 
 The most common types of markers currently used are \emph{Single Nucleotide Polymorphism} (SNP) markers. To convert our simulated data objects to these types of markers, we combine them with a call to \code{multiparentSNP}. 
-<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
 combinedSNP <- combined + multiparentSNP(keepHets = TRUE)
 @
 This modification can also be applied on a per-dataset basis. 
-<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
 combinedSNP <- combined
 combinedSNP@geneticData[[1]] <- combinedSNP@geneticData[[1]] + multiparentSNP(keepHets = TRUE)
 combinedSNP@geneticData[[2]] <- combinedSNP@geneticData[[2]] + multiparentSNP(keepHets = FALSE)
@@ -222,7 +244,7 @@ The founders in object \code{combinedSNP} now have only two alleles ($0$ and $1$
 
 For any pair of genetic locations there is a probability model govering the joint distribution of the sources of the inherited alleles. That is, a genotyped final line will have an allele at marker $M_1$ inherited from some founder line, and another allele at marker $M_2$ inherited from a (potentially different) founder line. We ignore the fact that different founders may have identical alleles; it is the source of the allele that is important. 
 
-These joint distributions are governed by the \emph{identity-by-descent} (IBD) probabilities, which have been calculated for a variety of different designs \citep{Teuscher2007,Broman2005,Broman2012a,Broman2012b}. These probabilities are a function of the recombination fraction $r$ between the two markers. Several examples of relevant probability models are given in Appendix \ref{sec:ibd_models}. The relevant probabilities for more complicated designs (especially those with finite generations of selfing) are too complicated to give here, but can be calculated with the help of a computer algebra system such as Octave or Mathematica. 
+These joint distributions are governed by the \emph{identity-by-descent} (IBD) probabilities, which have been calculated for a variety of different designs \citep{Teuscher2007,Broman2005,Broman2012a,Broman2012b}. These probabilities are a function of the recombination fraction $r$ between the two markers. The relevant probabilities for more complicated designs (especially those with finite generations of selfing) are too complicated to give here, but can be calculated with the help of a computer algebra system such as Octave or Mathematica. 
 
 If two markers are fully informative, then the probability model is informative for the parameter $r$, which can be estimated using numerical maximum likelihood. However this may no longer be true when the markers are less informative. For example, assume we have a four-parent design with a single funnel and infinite generations of selfing, and markers $M_1$ and $M_2$ with the following distribution of marker alleles for the founders.
 <<echo=FALSE,cache=TRUE>>=
@@ -234,7 +256,15 @@ The situation appears to be more complicated the larger the number of founders. 
 <<echo=FALSE,cache=TRUE>>=
 cbind(M1 = c("Founder 1" = 1, "Founder 2" = 0, "Founder 3" = 0, "Founder 4" = 1, "Founder 5" = 1, "Founder 6" = 0, "Founder 7" = 1, "Founder 8" = 1), M2 = c("Founder 1" = 0, "Founder 2" = 0, "Founder 3" = 1, "Founder 4" = 0, "Founder 5" = 0, "Founder 6" = 0, "Founder 7" = 1, "Founder 8" = 1))
 @
-In this case the likelihood is approximately (but not exactly) flat. The marker probabilities as a function of $r$ are shown in Figure \ref{fig:approximately_flat_no_intercross}. The case of randomly chosen funnels, with infinite generations of selfing and ten generations of intercrossing is shown in Figure \ref{fig:approximately_flat_ten_intercross}.
+In this case the likelihood is approximately (but not exactly) flat. The marker probabilities as a function of $r$ are shown in Figure \ref{fig:approximately_flat_no_intercross}. For comparison, we consider the following marker allele distribution to be informative. 
+<<echo=FALSE,cache=TRUE>>=
+cbind(M1 = c("Founder 1" = 1, "Founder 2" = 1, "Founder 3" = 0, "Founder 4" = 1, "Founder 5" = 1, "Founder 6" = 0, "Founder 7" = 1, "Founder 8" = 1), M2 = c("Founder 1" = 0, "Founder 2" = 1, "Founder 3" = 0, "Founder 4" = 0, "Founder 5" = 0, "Founder 6" = 0, "Founder 7" = 1, "Founder 8" = 1))
+@
+The marker probabilities for this informative case are shown in Figure \ref{fig:eight_way_informative}. There are also cases where the likelihood is approximately symmetric. For example, consider the following marker allele distribution. 
+<<echo=FALSE,cache=TRUE>>=
+cbind(M1 = c("Founder 1" = 1, "Founder 2" = 1, "Founder 3" = 0, "Founder 4" = 1, "Founder 5" = 1, "Founder 6" = 0, "Founder 7" = 1, "Founder 8" = 1), M2 = c("Founder 1" = 0, "Founder 2" = 1, "Founder 3" = 1, "Founder 4" = 0, "Founder 5" = 0, "Founder 6" = 0, "Founder 7" = 1, "Founder 8" = 1))
+@
+The marker probabilities for this case are shown in Figure \ref{fig:eight_way_symmetric}. In this case $r = 0$ is indistinguishable from $r = 0.5$. 
 
 %These figures come from mathematica notebook finiteSelfingIntercrossing8WaySingleFunnel.nb, stored with the mpMap2 package itself. 
 \begin{figure}
@@ -253,28 +283,42 @@ In this case the likelihood is approximately (but not exactly) flat. The marker 
 	\end{subfigure}
 	\caption{Joint marker probabilities for an approximately uninformative pair of markers. The design used is an eight-parent cross with a single funnel, zero generations of intercrossing and infinite generations of selfing. \label{fig:approximately_flat_no_intercross}}
 \end{figure}
-
-%These figures come from mathematica notebook finiteSelfingIntercrossing8Way.nb, stored with the mpMap2 package itself. 
 \begin{figure}
 \centering
 	\begin{subfigure}{0.48\textwidth}
-		\includegraphics[scale = 0.2]{approximatelyFlatRandomFunnelTenIntercrossing00.pdf}
+		\includegraphics[scale = 0.2]{informativeSingleFunnel00.pdf}
 	\end{subfigure}
 	\begin{subfigure}{0.48\textwidth}
-		\includegraphics[scale = 0.2]{approximatelyFlatRandomFunnelTenIntercrossing01.pdf}
+		\includegraphics[scale = 0.2]{informativeSingleFunnel01.pdf}
 	\end{subfigure}
 	\begin{subfigure}{0.48\textwidth}
-		\includegraphics[scale = 0.2]{approximatelyFlatRandomFunnelTenIntercrossing10.pdf}
+		\includegraphics[scale = 0.2]{informativeSingleFunnel10.pdf}
 	\end{subfigure}
 	\begin{subfigure}{0.48\textwidth}
-		\includegraphics[scale = 0.2]{approximatelyFlatRandomFunnelTenIntercrossing11.pdf}
+		\includegraphics[scale = 0.2]{informativeSingleFunnel11.pdf}
 	\end{subfigure}
-	\caption{Joint marker probabilities for an approximately uninformative pair of markers. The design used is an eight-parent cross with randomly chosen funnels, ten generations of intercrossing and infinite generations of selfing. \label{fig:approximately_flat_ten_intercross}}
+	\caption{Joint marker probabilities for an informative pair of markers. The design used is an eight-parent cross with a single funnel, zero generations of intercrossing and infinite generations of selfing. \label{fig:eight_way_informative}}
+\end{figure}
+\begin{figure}
+\centering
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{uninformativeSingleFunnel00.pdf}
+	\end{subfigure}
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{uninformativeSingleFunnel01.pdf}
+	\end{subfigure}
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{uninformativeSingleFunnel10.pdf}
+	\end{subfigure}
+	\begin{subfigure}{0.48\textwidth}
+		\includegraphics[scale = 0.2]{uninformativeSingleFunnel11.pdf}
+	\end{subfigure}
+	\caption{Joint marker probabilities for an uninformative pair of markers. The design used is an eight-parent cross with a single funnel, zero generations of intercrossing and infinite generations of selfing. \label{fig:eight_way_symmetric}}
 \end{figure}
 
-In theory we can test whether a pair of markers is non-informative by testing whether the derivative of the likelihood is identically zero. This was the approach originally used in \pkg{mpMap}, however it appears to only be practical for designs involving infinite generations of selfing, and \emph{cannot} be used to identify marker pairs that are approximately non-informative. For this reason it is necessary to use a numerical test for non-informative and approximately non-informative marker pairs. 
+We can test whether a pair of markers is completely non-informative (in the sense of a flat likelihood) by testing whether the derivative of the likelihood is identically zero. This was the approach originally used in \pkg{mpMap}, however it appears to only be practical for designs involving infinite generations of selfing. This approach \emph{cannot} be used to identify marker pairs like those in Figure \ref{fig:approximately_flat_no_intercross}, which are approximately non-informative, or those in Figure \ref{fig:eight_way_symmetric}, which have an approximately symmetric likelihood. For this reason it is necessary to use a numerical test for non-informative and approximately non-informative marker pairs. 
 
-The marker probabilities are computed for a large number of equally spaced values of $r$. Let $\lcu P_i(r) \rcu$ be the set of marker probabilities at some recombination value $r$. For a pair of SNP markers $i$ would take values in $\{\{0, 0\}, \{0, 1\}, \{1, 0\}, \{1, 1\}\}$. If there are recombination values $r_1$ and $r_2$ with $\abs{r_1 - r_2} > 0.06$ so that the $L^1$ distance $\sum_i \abs{P_i(r_1) - P_i(r_2)}$ is less than $0.003$, then the pair of markers will be declared uninformative. This heuristic is computationally expensive but has the advantage of detecting both uninformative and approximately uninformative pairs of markers, as we will demonstrate in the next section. 
+The marker probabilities are computed for a large number of equally spaced values of $r$. Let $\lcu P_i(r) \rcu$ be the set of marker probabilities at some recombination value $r$. For a pair of SNP markers, $i$ would take values in $\{\{0, 0\}, \{0, 1\}, \{1, 0\}, \{1, 1\}\}$. If there are recombination values $r_1$ and $r_2$ with $\abs{r_1 - r_2} > 0.06$ so that the $L^1$ distance $\sum_i \abs{P_i(r_1) - P_i(r_2)}$ is less than $0.003$, then the pair of markers will be declared uninformative. This heuristic is computationally expensive, but has the advantage of detecting both uninformative and approximately uninformative pairs of markers, as we will demonstrate in the next section. 
 
 Although the number of markers may be large, there are only a finite number of \emph{different} marker allele distributions that are possible. Therefore we collect a list of distinct marker allele distributions and run the heuristic on all pairs. The computational cost of the heuristic is therefore a fixed cost, independent of the number of lines or number of markers. In the context of large data sets this computational cost will likely be insignificant.
 
@@ -297,9 +341,9 @@ The intermediate stages of the computation require significantly more memory tha
 
 Our package makes more extensive use of lookup tables and pre-computation than \pkg{mpMap}. As a result we can analyse large data sets using only OpenMP multi-threading. Package \pkg{mpMap} required the use of much more complicated MPI or CUDA multi-threading to achieve acceptable performance, and this code was much harder to maintain and use. 
 
-To demonstrate this function, we apply it to the object \code{combined} which we created previously. In general option \code{verbose} would be set to \code{TRUE} or \code{FALSE}. In this case we need output suitable for a document, so we specify \code{progressStyle}, which is argument \code{style} to \code{txtProgressBar}. 
+To demonstrate this function, we apply it to the object \code{combined} which we created previously. In general option \code{verbose} would be set to \code{TRUE} or \code{FALSE}. In this case we need output suitable for a document, so we use \code{list(progressStyle=1)}. This specifies that that argument \code{style} of \code{txtProgressBar} should be $1$, giving output suitable for a document instead of a console. 
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
-rf <- estimateRF(object = combinedSNP, verbose = list(verbose=TRUE, progressStyle = 1))
+rf <- estimateRF(object = combinedSNP, verbose = list(progressStyle = 1))
 @
 
 \section{Construction of linkage groups}
@@ -319,11 +363,26 @@ Internally \code{formGroups} uses hierarcichal clustering, and this requires tha
 
 \section{Ordering of chromosomes}
 
-Ordering of chromosomes is performed using \emph{simulated annealing}. We use a simulated annealing method \citep{Brusco2005} known as \emph{Anti-Robinson seriation}. The implementation originally comes from the \pkg{seriation} package \citep{Hahsler2008}, and has been adapted to our data structures. Although it performs \emph{extremely} well on smaller data sets, it is prohibitively expensive on larger data sets, and cannot easily be parallelized. Fortunately, it is not generally necessary to order the entire chromosome in one pass. It is acceptable to partition the markers on a chromosome into $n$ groups, order each group separately and then merge the resulting groups together. Finer ordering can then be performed using the imputed founder alleles. 
+Ordering of chromosomes is performed using \emph{simulated annealing}. We use a simulated annealing method \citep{Brusco2005} known as \emph{Anti-Robinson seriation}. The implementation originally comes from the \pkg{seriation} package \citep{Hahsler2008}, and has been adapted to our data structures. The simulated annealing algorithm is based on two types of transformations. The first is swapping a pair of random markers, and is computationally fast. The second chooses a random marker and moves it to a random position. This second transformation can be computationally expensive, especially if the random position is very far away from the previous position. 
+
+The ordering function is
+\begin{Code}
+orderCross(mpcrossLG, cool = 0.5, tmin = 0.1, nReps = 1, maxMove = 0, 
+    effortMultiplier = 1, randomStart = TRUE, verbose = FALSE)
+\end{Code}
+Input \code{cool} is the rate of cooling for the simulated annealing algorithm. Smaller values lead to slower cooling, and higher computational effort. Input \code{tmin} is the minimum temperature for the algorithm. Input \code{nReps} is the number of independent repetitions of the algorithm to perform. If \code{nReps > 1} then the best ordering is returned. If \code{randomStart = TRUE} then each of these repetitions starts from a random ordering, otherwise they are all started using the current ordering of the \code{mpcrossLG} object. 
+
+Input \code{maxMove} indicates the maximum possible distance to move a marker using the "move" transformation mentioned previously. A value of \code{0} indicates no limit, so the chosen marker can be shifted to any location. A value of \code{1} means the chosen marker can be shifted left one position or right one position, etc. Input \code{effortMultiplier} increases the amount of computational effort. So a value of $2$ will double the amount of computational time, but hopefully result in a better ordering. If \code{verbose = TRUE} then a progress bar is displayed. 
+
+Although simulated annealing performs extremely well on smaller data sets, it is prohibitively expensive on larger data sets and cannot easily be parallelized. Fortunately, it is not generally necessary to order the entire chromosome in one pass. It is acceptable to use hierarchical cluster to form $k$ groups, order these $k$ groups using simulated annealing, and then perform finer scale ordering using \code{orderCross} with \code{randomStart = FALSE}. The hierarchical clustering ordering function is 
+\begin{Code}
+clusterOrderCross(mpcrossLG, cool = 0.5, tmin = 0.1, nReps = 1, 
+    maxMove = 0, effortMultiplier = 1, randomStart = TRUE, nGroups)
+\end{Code}
 
 \section{Estimation of map distances}
 
-\section{Imputation of founder genotypes}
+\section{Probability models for imputation and probability computations}
 
 Imputation of founder genotypes is performed by assuming a Hidden Markov Model (HMM) for the underlying genotypes. Strictly speaking this is incorrect, as the founder genotypes do not form a Markov Chain. For example, consider the biparental recombinant inbred design. \citet{Broman2005} gives the probability of the two-loci recombinant genotype AB as $\frac{r}{1+2 r}$ and the probabilities of the non-recombinant genotype AA as $\frac{1}{2(1 + 2r)}$. If the IBD genotypes formed a Markov Chain then the probability of the three equally spaced loci having the IBD genotype AAA would be 
 \begin{align*}
@@ -333,44 +392,55 @@ This value is in fact \citep{Broman2005}
 \begin{align*}
 \frac{1 + 2 r  - 4 r^2 - 2 c r^2 + 4 c r^3}{2(1 + 2 r) (1 + 4 r - 4 c r^2)}, 
 \end{align*}
-where $c = r^{-2}\mathbb{P}\left(\mbox{double recombinant}\right)$. As shown in Figure \ref{fig:multipoint_approximation} the approximation is very good, especially over shorter genetic distances. Assuming that the IBD genotype forms a Markov Chain goverened by its two-locus probabilities is unlikely to cause any problems. The underlying genotypes can then be imputed using the Viterbi algorithm. 
+where $c = r^{-2}\mathbb{P}\left(\mbox{double recombinant}\right)$. As shown in Figure \ref{fig:multipoint_approximation} the approximation is very good, especially over shorter genetic distances. Assuming that the IBD genotype forms a Markov Chain goverened by its two-locus probabilities is unlikely to cause any problems. 
 
-This imputation method is implemented by the function \code{imputeFounders}, which has signature
+\begin{figure}
+\centering
+\includegraphics[scale=0.15]{multipointApproximation.pdf}
+\caption{The true three-point probability of genotype AAA for a recombinant inbred line at three equally spaced locations, and the Markov Chain approximation. \label{fig:multipoint_approximation}}
+
+\end{figure}
+
+\section{Imputation}
+
+The underlying genotypes can then be imputed using the Viterbi algorithm. This imputation method is implemented by the function \code{imputeFounders}, which has signature
 \begin{Code}
-imputeFounders(mpcrossMapped)
+imputeFounders(mpcrossMapped, homozygoteMissingProb = 1, 
+    heterozygoteMissingProb = 1, errorProb = 0, extraPositions = list())
 \end{Code}
-We can apply this function to the object \code{combinedSNP}, which contains two data sets. 
-<<cache = TRUE>>=
+Input \code{extraPositions} is a list gives extra (non-marker) positions for which to perform imputation. These positions can be given explicitly, in the format shown below, or using the convenience function \code{generateGridPositions(s)}. Specifying this convenience function for \code{extraPositions} generates a grid of points for each chromosome, equally spaced with distance \code{s}. 
+
+We apply this function to the object \code{combinedSNP}, which contains two data sets. 
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 mappedSNP <- new("mpcrossMapped", combinedSNP, map = map)
-imputed <- imputeFounders(mappedSNP)
+imputed <- imputeFounders(mappedSNP, extraPositions = list("2" = c("a" = 3.14, "b" = 66)))
+@
+The extra positions are specified to be positions $3.14$ named \code{a} and $66$ named \code{b}. There are no extra positions on chromosome \code{1}. Alternatively, we could specify a grid of points, separated by 10 cM. 
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+imputed <- imputeFounders(mappedSNP, extraPositions = generateGridPositions(10))
 @
 As we originally specified the \code{selfing} slot to have value \code{"finite"}, the imputed values will contain heterozygotes. The encoding of heterozygotes is given in an entry named \code{key}. Comparing the imputed data to the original data (before the markers were converted to SNP markers) shows good agreement for the first data set, even for the heterozygotes. 
 <<cache=TRUE>>=
+imputed <- imputeFounders(mappedSNP)
 imputed@geneticData[[1]]@imputed@key
-table(imputed@geneticData[[1]]@imputed@data, combined@geneticData[[1]]@finals)
+table(imputed@geneticData[[1]]@imputed@data, finals(combined)[[1]])
 @
 The pattern of imputation errors for the heterozygotes makes sense; value $5$ is a heterozygote of founders $1$ and $2$, and the most frequent imputation error is to classify it as a homozygote of founder $1$ or $2$. 
 
 For the second data set no heterozygotes are imputed. This is because no heterozygote markers were called, so heterozygotes are either missing or consistent with being homozygotes, in which case the homozygote is always more likely. The only clue in the data is that missing values are always heterozygotes in this case. We can therefore alter the model to include a probability of observing a missing value. Setting \code{heterozygoteMissingProb} to $1$ and \code{homozygoteMissingProb} to $0.05$ gives acceptable results. 
-<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
-table(imputed@geneticData[[2]]@imputed@data, combined@geneticData[[2]]@finals)
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
+table(imputed@geneticData[[2]]@imputed@data, finals(combined)[[2]])
 imputed <- imputeFounders(mappedSNP, heterozygoteMissingProb = 1, homozygoteMissingProb = 0.05)
-table(imputed@geneticData[[2]]@imputed@data, combined@geneticData[[2]]@finals)
+table(imputed@geneticData[[2]]@imputed@data, finals(combined)[[2]])
 @
 The miss-classifications still demonstrate the same problem to a lesser extent. Value $5$ is a heterozygote of founders 1 and 2, and just under 50\% of these values are miss-classified as homozygotes of founders $1$ or $2$. 
-
-\begin{figure}
-\centering
-\includegraphics[scale=0.2]{multipointApproximation.pdf}
-\caption{The true three-point probability of genotype AAA for a recombinant inbred line at three equally spaced locations, and the Markov Chain approximation. \label{fig:multipoint_approximation}}
-\end{figure}
 
 \section{Example}
 
 \subsection{No intecrossing or selfing}
 
 We begin with an example showing that \pkg{mpMap2} can construct correct maps from unusual experimental designs. In this case we use an eight-parent cross with randomly chosen funnels and no intercrossing and no selfing. The underlying genotypes for this design are all heterozygotes. 
-<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
 pedigree <- eightParentPedigreeRandomFunnels(initialPopulationSize = 1000, intercrossingGenerations = 0, selfingGenerations = 0, nSeeds = 1)
 selfing(pedigree) <- "finite"
 map <- qtl::sim.map(len = rep(300, 3), n.mar = 101, anchor.tel = TRUE, include.x = FALSE, eq.spacing = FALSE)
@@ -382,20 +452,21 @@ The estimation of recombination fractions is somewhat slow due to the amount of 
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 #Randomly rearrange markers
 crossSNP <- subset(crossSNP, markers = sample(markers(cross)))
-rf <- estimateRF(crossSNP, verbose = list(verbose = TRUE, progressStyle = 1))
+rf <- estimateRF(crossSNP, verbose = list(progressStyle = 1))
 @
 The next steps are forming linkage groups, ordering chromosomes and imputing missing recombination fraction values.
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
 grouped <- formGroups(rf, groups = 3, method = "average", clusterBy="theta")
-ordered <- orderCross(grouped)
-imputedTheta <- impute(ordered, verbose = list(verbose = TRUE, progressStyle = 1))
+ordered <- orderCross(grouped, effortMultiplier = 2)
+imputedTheta <- impute(ordered, verbose = list(progressStyle = 1)) 
 @
 The next step is to estimate the map. Our estimated map is significantly longer than the true map. Note the use of the function \code{jitterMap}. This function spaces out markers that have been assigned to the same location. This is necessary for the purposes of imputation, as the estimateMap function is capable of estimating a map where markers which are observed to have at least one recombination event between them are assigned the same location. This makes the map incompatible with the data, and would cause problems during the imputation step. 
-<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=45)>>=
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
 estimatedMap <- estimateMap(imputedTheta, maxOffset = 10)
 estimatedMap <- jitterMap(estimatedMap)
 #match up estimated chromosomes with original chromosomes
-estimatedChromosomes <- sapply(1:3, function(x) which.max(unlist(lapply(estimatedMap, function(y) length(intersect(names(y), names(map[[x]])))))))
+estChrFunc <- function(x) which.max(unlist(lapply(estimatedMap, function(y) length(intersect(names(y), names(map[[x]]))))))
+estimatedChromosomes <- sapply(1:3, estChrFunc)
 tail(estimatedMap[[estimatedChromosomes[[1]]]])
 tail(map[[1]])
 @
@@ -403,7 +474,7 @@ The reason for constructing a genetic map is often to search for quantitative tr
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
 mappedObject <- new("mpcrossMapped", imputedTheta, map = estimatedMap)
 imputedFounders <- imputeFounders(mappedObject)
-summary <- table(imputedFounders@geneticData[[1]]@imputed@data[,markers(cross)], cross@geneticData[[1]]@finals)
+summary <- table(imputedFounders@geneticData[[1]]@imputed@data[,markers(cross)], finals(cross))
 sum(diag(summary))/sum(summary)
 @
 We emphasize that this imputation rate is remarkably high given that there are $28$ possible genotypes. 
@@ -414,8 +485,143 @@ We emphasize that this imputation rate is remarkably high given that there are $
 
 \appendix
 
+\begin{comment}
 \section{Probability models}
 \label{sec:ibd_models}
+
+\subsection{Two parents}
+
+\subsection{Four parents}
+
+\subsubsection{A single funnel}
+Assume that the single funnel is $\lcu A, B, C, D\rcu$, and there are two markers $M_1$ and $M_2$. We denote a haplotype for these two markers by
+\begin{align*}
+\begin{array}{cc|c}
+M_1 \ \ & w & x\\
+M_2 \ \ & y & z
+\end{array}, 
+\end{align*}
+so that the genotypes at $M_1$ is $wx$ and the genotype at $M_2$ is $yz$. There are $4^4$ genotypes, which we reduce to $18$ classes:
+\begin{align*}
+H_1 &= \begin{array}{c|c}
+A & A\\
+A & A
+\end{array}, &
+H_7 &= \begin{array}{c|c}
+A & A\\
+C & D
+\end{array}, &
+H_{13} &= \begin{array}{c|c}
+A & C\\
+A & C
+\end{array}
+%
+\\
+%
+H_2 &= \begin{array}{c|c}
+A & A\\
+A & B
+\end{array}, &
+H_8 &= \begin{array}{c|c}
+A & B\\
+A & B
+\end{array}, &
+H_{14} &= \begin{array}{c|c}
+A & C\\
+A & D
+\end{array}
+%
+\\
+%
+H_3 &= \begin{array}{c|c}
+A & A\\
+A & C
+\end{array}, &
+H_9 &= \begin{array}{c|c}
+A & B\\
+A & C
+\end{array}, &
+H_{15} &= \begin{array}{c|c}
+A & C\\
+B & D
+\end{array}
+%
+\\
+%
+H_4 &= \begin{array}{c|c}
+A & A\\
+B & B
+\end{array}, &
+H_{10} &= \begin{array}{c|c}
+A & B\\
+B & A
+\end{array}, &
+H_{16} &= \begin{array}{c|c}
+A & C\\
+C & A
+\end{array}
+%
+\\
+%
+H_5 &= \begin{array}{c|c}
+A & A\\
+B & C
+\end{array}, &
+H_{11} &= \begin{array}{c|c}
+A & B\\
+B & C
+\end{array}, &
+H_{17} &= \begin{array}{c|c}
+A & C\\
+C & B
+\end{array}
+%
+\\
+%
+H_6 &= \begin{array}{c|c}
+A & A\\
+C & C
+\end{array}, &
+H_{12} &= \begin{array}{c|c}
+A & B\\
+C & D
+\end{array}, &
+H_{18} &= \begin{array}{c|c}
+A & C\\
+D & B
+\end{array}
+\end{align*}
+
+\begin{align*}
+\left(
+\begin{array}{cccccccccccccccccc}
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+p_1 & 2^{-d} & 0 & p_1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+p_1 & 0 & 2^{-d} & 0 & 0 & p_1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & p_1 & 2^{-d} & p_1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1-2^{-d} & 2^{-d} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+p_2 & 2 p_6 & 0 & p_3 & 0 & 0 & 0 & \frac{p_{10}}{2} & 0 & \frac{p_9}{2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\frac{p_4}{4} & \frac{p_6}{2} & \frac{p_6}{2} & \frac{p_7}{4} & \frac{p_6}{2} & \frac{p_8}{2} & \frac{p_6}{2} & 0 & \frac{p_{10}}{2} & 0 & \frac{p_9}{2} & 0 & 0 & 0 & 0 &
+0 & 0 & 0 \\
+\frac{p_5}{2} & 2 p_6 & 0 & p_2 & 0 & 0 & 0 & \frac{p_9}{2} & 0 & \frac{p_{10}}{2} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\frac{p_5}{4} & \frac{p_6}{2} & \frac{p_6}{2} & \frac{p_4}{4} & \frac{p_6}{2} & \frac{p_8}{2} & \frac{p_6}{2} & 0 & \frac{p_9}{2} & 0 & \frac{p_{10}}{2} & 0 & 0 & 0 & 0 &
+0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & p_8 & 2 p_6 & 0 & 0 & 0 & 0 & p_{11} & 0 & 0 & 0 & 0 & 0 & 0 \\
+p_2 & 0 & 2 p_6 & 0 & 0 & p_3 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{p_{10}}{2} & 0 & 0 & \frac{p_9}{2} & 0 & 0 \\
+\frac{p_4}{4} & 0 & p_6 & \frac{p_4}{4} & p_6 & p_3 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{p_{10}}{2} & 0 & 0 & \frac{p_9}{2} & 0 \\
+0 & 0 & 0 & p_2 & 2 p_6 & p_3 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{p_{10}}{2} & 0 & 0 & \frac{p_9}{2} \\
+\frac{p_5}{2} & 0 & 2 p_6 & 0 & 0 & p_2 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{p_9}{2} & 0 & 0 & \frac{p_{10}}{2} & 0 & 0 \\
+\frac{p_5}{4} & 0 & p_6 & \frac{p_5}{4} & p_6 & p_2 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{p_9}{2} & 0 & 0 & \frac{p_{10}}{2} & 0 \\
+0 & 0 & 0 & \frac{p_5}{2} & 2 p_6 & p_2 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{p_9}{2} & 0 & 0 & \frac{p_{10}}{2} \\
+\end{array}
+\right)
+\end{align*}
+\subsubsection{Randomly chosen funnels}
+
+\subsection{Eight parents}
+\end{comment}
 
 \bibliography{./mpMap2}
 \end{document}
