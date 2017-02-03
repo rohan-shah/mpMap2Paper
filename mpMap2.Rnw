@@ -107,11 +107,9 @@ The initial crosses are known as \emph{funnels}. Accounting for symmetries, ther
 \caption{Example genotypes for the third generation of the eight-way cross, which will be possible or impossible, depending on the choice of initial cross. \label{fig:funnelIllustration}}
 \end{figure}
 
-\section{Simulation}
+\section{Pedigrees}\label{sec:pedigree}
 
-\subsection{Pedigrees}
-
-\subsubsection{Biparental pedigrees}
+\subsection{Biparental pedigrees}
 
 Package \pkg{mpMap2} provides code for the generation of a large number of pedigrees. The two simplest biparental design functions are \code{rilPedigree(populationSize, selfingGenerations)} which generates a biparental RIL pedigree, and \code{f2Pedigree(populationSize)} which generates an F2 population. Note that the RIL pedigree requires the specification of the number of generations of selfing, and the populations generated from this pedigree is likely to contain some residual heterozygosity. The pedigree object has a slot \code{selfing} that controls whether this heterozygosity is modelled in the analysis. The only possible values are \code{"finite"}, in which case heterozygosity is explicitly modelled, or \code{"infinite"} in which case the number of generations of selfing is assumed to be inifinite.
 
@@ -122,7 +120,7 @@ twoParentPedigree(initialPopulationSize, selfingGenerations,
 \end{Code}
 Input \code{initialPopulationSize} is the number of crosses of the founders, which by assumption are all genetically identical. Input \code{intercrossingGenerations} is the number of generations of random intermating. Input \code{nSeeds} is the number of independent selfing lines generated from each individual after the random intermating. Input \code{selfingGenerations} is the number of generations of inbreeding by selfing. 
 
-\subsubsection{Four-parent pedigrees}
+\subsection{Four-parent pedigrees}
 
 The functions for simulation of four parent RIL designs are \code{fourParentPedigreeSingleFunnel} and \code{fourParentPedigreeRandomFunnels}. In the first case only the funnel $\{A, B, C, D\}$ is used. In the second case each individual is drawn from a randomly chosen funnel. The signatures for these functions are
 \begin{Code}
@@ -132,33 +130,28 @@ fourParentPedigreeSingleFunnel(initialPopulationSize, selfingGenerations,
     nSeeds, intercrossingGenerations).
 \end{Code}
 
-\subsubsection{Higher order pedigrees}
+\subsection{Higher order pedigrees}
 
 The functions for generating eight and sixteen parent designs have identical signatures and similar names, except with \code{four} replaced with \code{eight} or \code{sixteen}. 
 
-\subsubsection{Visualising the pedigree}
-
-It can be useful to examine the pedigree as a directed graph. This can be done using function \code{pedigreeToGraph}. 
-<<tidy=TRUE,tidy.opts=list(width.cutoff=50),cache=TRUE,out.width='50%',fig.align='center'>>=
-pedigree <- fourParentPedigreeRandomFunnels(initialPopulationSize = 3, selfingGenerations = 1, intercrossingGenerations = 2, nSeeds = 1)
-plot(pedigreeToGraph(pedigree))
-@
-
-\subsubsection{Inputting pedigrees}
+\subsection{Inputting pedigrees}
 
 Pedigrees from experiments can be input into mpMap2 using the \code{pedigree} function. 
-\begin{code}
+\begin{Code}
 pedigree(lineNames, mother, father, selfing, warnImproperFunnels = TRUE)
-\end{code}
-Input \code{lineNames} contains the names of the lines in the pedigree. Inputs \code{mother} and \code{father} are integer vectors giving the indices of the parents within \code{lineNames}.
- For example, consider the following pedigree with three founder lines.
+\end{Code}
+Input \code{lineNames} contains the names of the lines in the pedigree. Inputs \code{mother} and \code{father} are integer vectors giving the indices of the parents within \code{lineNames}. Lines with \code{mother} and \code{father} set to $0$ are the initial lines of the cross, which are assumed to be inbred. 
+
+For example, consider the following pedigree with three founder lines.
 <<tidy=TRUE,tidy.opts=list(width.cutoff=50),cache=TRUE,out.width='50%',fig.align='center'>>=
-p <- mpMap2::pedigree(lineNames = c("A", "B", "C", "F1_1", "F1_2", "F1_3", "F1_4", "F2_1", "F2_2", "F3"), mother = c(0, 0, 0, 1, 1, 1, 2, 4, 6, 8), father = c(0, 0, 0, 2, 2, 3, 3, 5, 7, 9), selfing = "finite")
+p <- mpMap2::pedigree(lineNames = c("A", "B", "C", "F1-1", "F1-2", "F1-3", "F1-4", "F2-1", "F2-2", "F3"), mother = c(0, 0, 0, 1, 1, 1, 2, 4, 6, 8), father = c(0, 0, 0, 2, 2, 3, 3, 5, 7, 9), selfing = "finite")
 plot(pedigreeToGraph(p))
 @
-This pedigree will be recognised as a special case of the eight-parent design where the founders are repeated within a funnel, and can be used for map construction. 
+This pedigree will be recognised as a special case of the eight-parent design where the founders are repeated within a funnel, so pedigrees of this type can be used for map construction. 
 
-\subsection{Genotypes}
+\section{Genetic data}
+
+\subsection{Simulation}
 
 Once a pedigree has been created it can be used to generate genetic data. Note that for simulation of genotypes the pedigree is not restricted to those listed above, and arbitrary pedigrees are allowed. The signature of the simulation function is
 \begin{Code}
@@ -237,6 +230,68 @@ founders(combinedSNP@geneticData[[1]])[, 1:5]
 hetData(combinedSNP, "D1M1") 
 @
 The founders in object \code{combinedSNP} now have only two alleles ($0$ and $1$) for every marker. In the first data set combinations of different marker alleles are coded as $2$. For the second data set we specified \code{keepHets = FALSE} so these marker heterozygotes are replaced by \code{NA}. The corresponding function for biparental designs is \code{biparentalSNP}. 
+
+\subsection{Importing data}
+
+An \code{mpcross} object can be created using function \code{mpcross}. 
+\begin{Code}
+mpcross(founders, finals, pedigree, hetData)
+\end{Code}
+Input \code{founders} is the matrix of founder marker alleles, where rows correspond to lines and columns correspond to marker names. The number of rows must be equal to the number of initial lines in the pedigree (lines which have \code{mother} and \code{father} equal to $0$). The row names of input \code{founders} must match the names of the initial lines in the pedigree. 
+
+Input \code{finals} is the matrix of marker alleles for the final population of genotyped lines, where rows correspond to lines and columns correspond to marker names. The row names of this matrix must be lines named in the pedigree. The column names must be the marker names, which must be identical to the markers given for \code{founders}. 
+
+Input \code{pedigree} must be a pedigree object, as described in Section \ref{sec:pedigree}. 
+
+Input \code{hetData} describes the encoding of the marker alleles for the final population, and must have class \code{hetData}. In the simplest case we have \code{nMarkers} SNP markers without any heterozygote calls, so the \code{hetData} object can be constructed as follows.
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+nMarkers <- 10
+hetData <- replicate(nMarkers, rbind(rep(0, 3), rep(1, 3)), simplify=FALSE)
+names(hetData) <- paste0("M", 1:10)
+hetData <- new("hetData", hetData)
+hetData[[1]]
+@
+A slightly more complicated case is SNP markers with heterozygotes called. In this case the \code{hetData} object might constructed be as follows.
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+nMarkers <- 10
+hetData <- replicate(nMarkers, rbind(rep(0, 3), rep(1, 3), c(0, 1, 2), c(1, 0, 2)), simplify=FALSE)
+names(hetData) <- paste0("M", 1:10)
+hetData <- new("hetData", hetData)
+hetData[[1]]
+@
+
+The previously constructed object \code{crossSingleFunnel} can be constructed from its parts as
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+founders <- founders(crossSingleFunnel)
+finals <- finals(crossSingleFunnel)
+hetData <- hetData(crossSingleFunnel)
+crossSingleFunnel <- mpcross(founders = founders, finals = finals, pedigree = pedigreeSF, hetData = hetData)
+@
+Real data often contains some invalid data. \pkg{mpMap2} performs extensive checks, and will reject invalid data. 
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
+#Put in two errors for the founders
+founders[3,3] <- 10
+founders[2,2] <- NA
+#Put in an error for the finals
+finals[1, 1] <- 100
+#Put in two errors for the hetData
+hetData[4] <- list(rbind(rep(0, 3), rep(1, 3)))
+hetData[[5]][1,1] <- NA
+
+crossSingleFunnel <- mpcross(founders = founders, finals = finals, pedigree = pedigreeSF, hetData = hetData)
+@
+A more computer-friendly list of most of thees errors is available using the \code{listCodingErrors} function. 
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
+errors <- listCodingErrors(founders = founders, finals = finals, hetData = hetData)
+errors$hetData
+errors$null
+head(errors$finals)
+@
+We begin with \code{errors\$hetData}. There are errors in the \code{hetData} for the third marker, because marker allele $3$ has been removed for this marker. This means that heterozygotes between this allele and other marker alleles are now invalid. There are errors in the \code{hetData} for the fourth marker, because there is no marker allele $0$. There is an error in the \code{hetData} for the fifth marker, because \code{NA} is invalid here. 
+
+The entry \code{errors\$null} indicates that the second marker has a missing allele for a founder. For these markers the observed marker alleles for the final population must be \code{NA}, and the corresponding \code{hetData} entry must have zero rows.  
+
+The entry \code{errors\$finals} indicates that line $1$ has an invalid value of $100$ for marker $1$. It also indicates that every marker allele except $1$ is invalid for marker $4$, due to the modification of \code{hetData[[4]]}. 
 
 \section{Estimation of recombination fractions}
 
@@ -357,7 +412,7 @@ Input \code{mpcrossRF} is an object of class \code{mpcrossRF}. Input \code{group
 \begin{align*}
 \Theta + \frac{\mathbf L}{l} \nabla.
 \end{align*}
-Intuitively, this means that the values in $\mathbf L$ are used to break ties between equal values in $\Theta$. We emphasise that specifying \code{"combined"} or \code{"lod"} for input \code{clusterBy} requires the matrix of likelihood ratio statistics to be computed using \emph{estimateRF}, and as mentioned this may require an infeasible amount of storage. 
+Intuitively, this means that the values in $\mathbf L$ are used to break ties between equal values in $\Theta$. We emphasise that specifying \code{"combined"} or \code{"lod"} for input \code{clusterBy} requires the matrix of likelihood ratio statistics to be computed using \code{estimateRF}, and as mentioned this may require an infeasible amount of storage. 
 
 Internally \code{formGroups} uses hierarcichal clustering, and this requires that the full dissimilarity matrix be stored in memory (as opposed to in a compressed form, such as an object of type \code{rawSymmetricMatrix}). This means that if there are a large number of markers \code{formGroups} may require a large amount of working memory. Specifying \code{preCluster = TRUE} attempts to reduce the amount of memory required by identifying groups of markers where the recombination fractions between them are all zero. These markers are grouped before the hierarchical clustering is performed, reducing the dimension of the dissimilarity matrix and therefore the required working memory. 
 
@@ -427,7 +482,7 @@ table(imputed@geneticData[[1]]@imputed@data, finals(combined)[[1]])
 @
 The pattern of imputation errors for the heterozygotes makes sense; value $5$ is a heterozygote of founders $1$ and $2$, and the most frequent imputation error is to classify it as a homozygote of founder $1$ or $2$. 
 
-For the second data set no heterozygotes are imputed. This is because no heterozygote markers were called, so heterozygotes are either missing or consistent with being homozygotes, in which case the homozygote is always more likely. The only clue in the data is that missing values are always heterozygotes in this case. We can therefore alter the model to include a probability of observing a missing value. Setting \code{heterozygoteMissingProb} to $1$ and \code{homozygoteMissingProb} to $0.05$ gives acceptable results. 
+For the second data set no heterozygotes are imputed. This is because no heterozygote markers were called, so heterozygotes are either missing or consistent with being homozygotes, in which case the homozygote is always more likely. The only clue in the data is that missing values are always heterozygotes in this case. Setting \code{heterozygoteMissingProb} to $1$ and \code{homozygoteMissingProb} to $0.05$ gives acceptable results. 
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
 table(imputed@geneticData[[2]]@imputed@data, finals(combined)[[2]])
 imputed <- imputeFounders(mappedSNP, heterozygoteMissingProb = 1, homozygoteMissingProb = 0.05)
