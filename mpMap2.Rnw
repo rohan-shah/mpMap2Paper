@@ -235,7 +235,7 @@ The founders in object \code{combinedSNP} now have only two alleles ($0$ and $1$
 
 An \code{mpcross} object can be created using function \code{mpcross}. 
 \begin{Code}
-mpcross(founders, finals, pedigree, hetData)
+mpcross(founders, finals, pedigree, hetData, fixCodingErrors = FALSE)
 \end{Code}
 Input \code{founders} is the matrix of founder marker alleles, where rows correspond to lines and columns correspond to marker names. The number of rows must be equal to the number of initial lines in the pedigree (lines which have \code{mother} and \code{father} equal to $0$). The row names of input \code{founders} must match the names of the initial lines in the pedigree. 
 
@@ -251,7 +251,7 @@ names(hetData) <- paste0("M", 1:10)
 hetData <- new("hetData", hetData)
 hetData[[1]]
 @
-A slightly more complicated case is SNP markers with heterozygotes called. In this case the \code{hetData} object might constructed be as follows.
+Specifying \code{hetData = infiniteSelfing} is a shortcut for this common case. A slightly more complicated case is SNP markers with heterozygotes called. In this case the \code{hetData} object might constructed be as follows.
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 nMarkers <- 10
 hetData <- replicate(nMarkers, rbind(rep(0, 3), rep(1, 3), c(0, 1, 2), c(1, 0, 2)), simplify=FALSE)
@@ -259,16 +259,17 @@ names(hetData) <- paste0("M", 1:10)
 hetData <- new("hetData", hetData)
 hetData[[1]]
 @
-
-The previously constructed object \code{crossSingleFunnel} can be constructed from its parts as
+If \code{fixCodingErrors = TRUE}, then the function will remove invalid data. Invalid data is detected using the \code{listCodingErrors} function. See Section \ref{subsec:invalid_data} for further details.  The previously constructed object \code{crossSingleFunnel} can be constructed from its parts as
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 founders <- founders(crossSingleFunnel)
 finals <- finals(crossSingleFunnel)
 hetData <- hetData(crossSingleFunnel)
 crossSingleFunnel <- mpcross(founders = founders, finals = finals, pedigree = pedigreeSF, hetData = hetData)
 @
+
+\subsection{Invalid data}\label{subsec:invalid_data}
 Real data often contains some invalid data. \pkg{mpMap2} performs extensive checks, and will reject invalid data. 
-<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=49)>>=
 #Put in two errors for the founders
 founders[3,3] <- 10
 founders[2,2] <- NA
