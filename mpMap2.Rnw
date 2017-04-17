@@ -185,6 +185,7 @@ length(crossRandomFunnels@geneticData)
 combined <- crossSingleFunnel + crossRandomFunnels
 length(combined@geneticData)
 @
+\subsection{Summarising and subsetting}
 
 The number of markers, founder lines and final lines can be extracted using functions \code{nMarkers}, \code{nFounders} and \code{nLines}. The number of markers is standardised once the objects are combined, so the \code{nMarkers} function outputs only a single value. Functions \code{nFounders} and \code{nLines} output a value for each contained design. 
 
@@ -202,7 +203,15 @@ A summary of an \code{mpcross} object is generated using the print function.
 print(crossSingleFunnel)
 @
 
-Note that the summary says that all markers are multiallelic. When simulating data using \code{simulateMPCross} all markers are generated as fully informative (including all heterozygotes, which are simulated as being distinguishable). We can see this by inspecting the contained objects of class \code{geneticData}. Slot \code{founders} contains data about the founder alleles. The founders data can be accessed by the helper function \code{founders}. 
+Subsets of the data in an \code{mpcross} object can be extracted using the \code{subset} function. 
+\begin{Code}
+subset(mpcross, markers, chromosomes, lines, groups)
+\end{Code}
+Input \code{markers} can be marker names of indices within \code{markers(mpcross)}. Input \code{chromosomes} is only valid if object \code{mpcross} has an associated map, and must refer to chromosomose by name. Input \code{lines} must refer to lines by name. Input \code{groups} is only valid if object \code{mpcross} has associated linkage groups (without an actual map). 
+
+\subsection{Less informative markers}
+
+When simulating data using \code{simulateMPCross} all markers are generated as fully informative (including all heterozygotes, which are simulated as being distinguishable). We can see this by inspecting the contained objects of class \code{geneticData}. Slot \code{founders} contains data about the founder alleles. The founders data can be accessed by the helper function \code{founders}. 
 <<cache=TRUE>>=
 #Equivalent to crossSingleFunnel@geneticData[[1]]@founders[,1:5]
 founders(crossSingleFunnel)[,1:5]
@@ -284,11 +293,11 @@ crossSingleFunnel <- mpcross(founders = founders, finals = finals, pedigree = pe
 A more computer-friendly list of most of thees errors is available using the \code{listCodingErrors} function. 
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 errors <- listCodingErrors(founders = founders, finals = finals, hetData = hetData)
-errors$hetData
+errors$invalidHetData
 errors$null
 head(errors$finals)
 @
-We begin with \code{errors\$hetData}. There are errors in the \code{hetData} for the third marker, because marker allele $3$ has been removed for this marker. This means that heterozygotes between this allele and other marker alleles are now invalid. There are errors in the \code{hetData} for the fourth marker, because there is no marker allele $0$. There is an error in the \code{hetData} for the fifth marker, because \code{NA} is invalid here. 
+We begin with \code{errors\$invalidHetData}. There are errors in the \code{hetData} for the third marker, because marker allele $3$ has been removed for this marker. This means that heterozygotes between this allele and other marker alleles are now invalid. There are errors in the \code{hetData} for the fourth marker, because there is no marker allele $0$. There is an error in the \code{hetData} for the fifth marker, because \code{NA} is invalid here. 
 
 The entry \code{errors\$null} indicates that the second marker has a missing allele for a founder. For these markers the observed marker alleles for the final population must be \code{NA}, and the corresponding \code{hetData} entry must have zero rows.  
 
@@ -374,7 +383,7 @@ The marker probabilities for this case are shown in Figure \ref{fig:eight_way_sy
 
 We can test whether a pair of markers is completely non-informative (in the sense of a flat likelihood) by testing whether the derivative of the likelihood is identically zero. This was the approach originally used in \pkg{mpMap}, however it appears to only be practical for designs involving infinite generations of selfing. This approach \emph{cannot} be used to identify marker pairs like those in Figure \ref{fig:approximately_flat_no_intercross}, which are approximately non-informative, or those in Figure \ref{fig:eight_way_symmetric}, which have an approximately symmetric likelihood. For this reason it is necessary to use a numerical test for non-informative and approximately non-informative marker pairs. 
 
-The marker probabilities are computed for a large number of equally spaced values of $r$. Let $\lcu P_i(r) \rcu$ be the set of marker probabilities at some recombination value $r$. For a pair of SNP markers, $i$ would take values in $\{\{0, 0\}, \{0, 1\}, \{1, 0\}, \{1, 1\}\}$. If there are recombination values $r_1$ and $r_2$ with $\abs{r_1 - r_2} > 0.06$ so that the $L^1$ distance $\sum_i \abs{P_i(r_1) - P_i(r_2)}$ is less than $0.003$, then the pair of markers will be declared uninformative. This heuristic is computationally expensive, but has the advantage of detecting both uninformative and approximately uninformative pairs of markers, as we will demonstrate in the next section. 
+The marker probabilities are computed for a large number of equally spaced values of $r$. Let $\lcu P_i(r) \rcu$ be the set of marker probabilities at some recombination value $r$. For a pair of SNP markers, $i$ would take values in $\{\{0, 0\}, \{0, 1\}, \{1, 0\}, \{1, 1\}\}$. If there are recombination values $r_1$ and $r_2$ with $\abs{r_1 - r_2} > 0.06$ so that the $L^1$ distance $\sum_i \abs{P_i(r_1) - P_i(r_2)}$ is less than $0.003$, then the pair of markers will be declared uninformative. This heuristic is computationally expensive, but has the advantage of detecting both uninformative and approximately uninformative pairs of markers.
 
 Although the number of markers may be large, there are only a finite number of \emph{different} marker allele distributions that are possible. Therefore we collect a list of distinct marker allele distributions and run the heuristic on all pairs. The computational cost of the heuristic is therefore a fixed cost, independent of the number of lines or number of markers. In the context of large data sets this computational cost will likely be insignificant.
 
@@ -385,7 +394,8 @@ The function \code{estimateRF} estimates the recombination fractions between all
 The signature of the function is
 \begin{Code}
 estimateRF(object, recombValues, lineWeights, gbLimit = -1, keepLod = FALSE, 
-    keepLkhd = FALSE, verbose = FALSE)
+    keepLkhd = FALSE, verbose = FALSE, markerRows = 1:nMarkers(object), 
+    markerColumns = 1:nMarkers(object))
 \end{Code}
 Input \code{object} is an object of class \code{mpcross} and input \code{recombValues} is the set of recombination fraction values to test in the grid search. Input \code{lineWeights} allows correction for segregation distortion and is beyond the scope of this document, see \citet{Shah2014} for further details. Input \code{gbLimit} specifies the maximum amount of memory to be used during the comutation. Input \code{keepLkhd} determines whether the value of the maximum likelihood is computed. Input \code{keepLod} determines whether the likelihood ratio statistic for testing the hypothesis $r \neq \frac{1}{2}$ is computed. Input \code{verbose} outputs diagnostic information such as the current progress, and the amount of memory used. 
 
