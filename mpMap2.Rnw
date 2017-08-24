@@ -136,15 +136,15 @@ The functions for generating eight and sixteen parent designs have identical sig
 
 \subsection{Inputting pedigrees}
 
-Pedigrees from experiments can be input into mpMap2 using the \code{pedigree} function. 
+Pedigrees from experiments can be input into \pkg{mpMap2} using the \code{pedigree} function. 
 \begin{Code}
 pedigree(lineNames, mother, father, selfing, warnImproperFunnels = TRUE)
 \end{Code}
-Input \code{lineNames} contains the names of the lines in the pedigree. Inputs \code{mother} and \code{father} are integer vectors giving the indices of the parents within \code{lineNames}. Lines with \code{mother} and \code{father} set to $0$ are the initial lines of the cross, which are assumed to be inbred. 
+Input \code{lineNames} contains the names of the lines in the pedigree. Inputs \code{mother} and \code{father} are integer vectors giving the indices of the parents within \code{lineNames}. Lines with \code{mother} and \code{father} set to $0$ are the initial lines of the cross, which are assumed to be inbred. The founding lines of the pedigree must appear at the start of the pedigree. Input \code{selfing} must have value \code{"finite"} or \code{"infinite"}, and determines whether any subsequent analysis using this pedigree should assume infinite generations of selfing. If input \code{warnImproperFunnels} is \code{TRUE}, then warnings will be generated about lines derived from funnels with repeated founders. 
 
 For example, consider the following pedigree with three founder lines.
 <<tidy=TRUE,tidy.opts=list(width.cutoff=50),cache=TRUE,out.width='50%',fig.align='center'>>=
-p <- mpMap2::pedigree(lineNames = c("A", "B", "C", "F1-1", "F1-2", "F1-3", "F1-4", "F2-1", "F2-2", "F3"), mother = c(0, 0, 0, 1, 1, 1, 2, 4, 6, 8), father = c(0, 0, 0, 2, 2, 3, 3, 5, 7, 9), selfing = "finite")
+p <- pedigree(lineNames = c("A", "B", "C", "F1-1", "F1-2", "F1-3", "F1-4", "F2-1", "F2-2", "F3"), mother = c(0, 0, 0, 1, 1, 1, 2, 4, 6, 8), father = c(0, 0, 0, 2, 2, 3, 3, 5, 7, 9), selfing = "finite")
 plot(pedigreeToGraph(p))
 @
 This pedigree will be recognised as a special case of the eight-parent design where the founders are repeated within a funnel, so pedigrees of this type can be used for map construction. 
@@ -278,7 +278,7 @@ crossSingleFunnel <- mpcross(founders = founders, finals = finals, pedigree = pe
 
 \subsection{Invalid data}\label{subsec:invalid_data}
 Real data often contains some invalid data. \pkg{mpMap2} performs extensive checks, and will reject invalid data. 
-<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=49)>>=
+<<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 #Put in two errors for the founders
 founders[3,3] <- 10
 founders[2,2] <- NA
@@ -397,7 +397,7 @@ estimateRF(object, recombValues, lineWeights, gbLimit = -1, keepLod = FALSE,
     keepLkhd = FALSE, verbose = FALSE, markerRows = 1:nMarkers(object), 
     markerColumns = 1:nMarkers(object))
 \end{Code}
-Input \code{object} is an object of class \code{mpcross} and input \code{recombValues} is the set of recombination fraction values to test in the grid search. Input \code{lineWeights} allows correction for segregation distortion and is beyond the scope of this document, see \citet{Shah2014} for further details. Input \code{gbLimit} specifies the maximum amount of memory to be used during the comutation. Input \code{keepLkhd} determines whether the value of the maximum likelihood is computed. Input \code{keepLod} determines whether the likelihood ratio statistic for testing the hypothesis $r \neq \frac{1}{2}$ is computed. Input \code{verbose} outputs diagnostic information such as the current progress, and the amount of memory used. 
+Input \code{object} is an object of class \code{mpcross} and input \code{recombValues} is the set of recombination fraction values to test in the grid search. Input \code{lineWeights} allows correction for segregation distortion and is beyond the scope of this document, see \citet{Shah2014} for further details. Input \code{gbLimit} specifies the maximum amount of memory to be used during the comutation. Input \code{keepLkhd} determines whether the value of the maximum likelihood is computed. Input \code{keepLod} determines whether the likelihood ratio statistic for testing the hypothesis $r \neq \frac{1}{2}$ is computed. Input \code{verbose} outputs diagnostic information such as the current progress, and the amount of memory used. Inputs \code{markerRows} and \code{markorColumns} are used to compute only part of the full recombination fraction matrix. When using these values, only the part in the upper-right triangle is computed. 
 
 The value returned by the function is an object of class \code{mpcrossRF}. It has the same \code{geneticData} slot as the object of class \code{mpcross}, but also contains a slot named \code{rf} with the results of the computation. The main result is the matrix of recombination fraction estimates, which is stored in slot \code{@rf@theta}. If this was stored as a numeric matrix it would require hundreds of gigabytes of storage space for some data sets. Fortunately, this matrix is symmetric, and each entry is one of the values specified in input \code{recombValues}. This matrix is therefore stored as an object of class \code{rawSymmetricMatrix}, which stores each value in the upper triangle of the matrix as a single byte. Each byte is interpreted as the index into \code{recombValues} which gives the estimated value. If $n$ is the number of markers we require only $\frac{n(n+1)}{2}$ bytes of storage, a 16-fold reduction in storage requirements compared to the storage of a similar object in \pkg{mpMap}. The value of \code{0xff} is interpreted as being \code{NA}. This requires input \code{recombValues} to always have less than 256 values, but this is not a siginificant limitation. 
 
@@ -440,11 +440,12 @@ Input \code{cool} is the rate of cooling for the simulated annealing algorithm. 
 
 Input \code{maxMove} indicates the maximum possible distance to move a marker using the "move" transformation mentioned previously. A value of \code{0} indicates no limit, so the chosen marker can be shifted to any location. A value of \code{1} means the chosen marker can be shifted left one position or right one position, etc. Input \code{effortMultiplier} increases the amount of computational effort. So a value of $2$ will double the amount of computational time, but hopefully result in a better ordering. If \code{verbose = TRUE} then a progress bar is displayed. 
 
-Although simulated annealing performs extremely well on smaller data sets, it is prohibitively expensive on larger data sets and cannot easily be parallelized. Fortunately, it is not generally necessary to order the entire chromosome in one pass. It is acceptable to use hierarchical cluster to form $k$ groups, order these $k$ groups using simulated annealing, and then perform finer scale ordering using \code{orderCross} with \code{randomStart = FALSE}. The hierarchical clustering ordering function is 
+Although simulated annealing performs extremely well on smaller data sets, it is prohibitively expensive on larger data sets and cannot easily be parallelized. Fortunately, it is not generally necessary to order the entire chromosome in one pass. It is acceptable to use hierarchical cluster to form $k$ groups, and order these $k$ groups using simulated annealing. The hierarchical clustering ordering function is 
 \begin{Code}
 clusterOrderCross(mpcrossLG, cool = 0.5, tmin = 0.1, nReps = 1, 
     maxMove = 0, effortMultiplier = 1, randomStart = TRUE, nGroups)
 \end{Code}
+After using \code{clusterOrderCross}, finer scale ordering can be performed using \code{orderCross} with \code{randomStart = FALSE} and setting \code{maxMove} to a relatively small value, which ensures only local changes are made to the ordering.
 
 \section{Estimation of map distances}
 
@@ -485,19 +486,19 @@ The extra positions are specified to be positions $3.14$ named \code{a} and $66$
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 imputed <- imputeFounders(mappedSNP, extraPositions = generateGridPositions(10))
 @
-As we originally specified the \code{selfing} slot to have value \code{"finite"}, the imputed values will contain heterozygotes. The encoding of heterozygotes is given in an entry named \code{key}. Comparing the imputed data to the original data (before the markers were converted to SNP markers) shows good agreement for the first data set, even for the heterozygotes. 
+As we originally specified the \code{selfing} slot to have value \code{"finite"}, the imputed values will contain heterozygotes. The encoding of heterozygotes is given in an entry named \code{key}, which can be extracted using the \code{imputationKey} function. Comparing the imputed data to the original data (before the markers were converted to SNP markers) shows good agreement for the first data set, even for the heterozygotes. 
 <<cache=TRUE>>=
 imputed <- imputeFounders(mappedSNP)
-imputed@geneticData[[1]]@imputed@key
-table(imputed@geneticData[[1]]@imputed@data, finals(combined)[[1]])
+imputationKey(imputed, design = 1)
+table(imputationData(imputed, design = 1), finals(combined)[[1]])
 @
 The pattern of imputation errors for the heterozygotes makes sense; value $5$ is a heterozygote of founders $1$ and $2$, and the most frequent imputation error is to classify it as a homozygote of founder $1$ or $2$. 
 
 For the second data set no heterozygotes are imputed. This is because no heterozygote markers were called, so heterozygotes are either missing or consistent with being homozygotes, in which case the homozygote is always more likely. The only clue in the data is that missing values are always heterozygotes in this case. Setting \code{heterozygoteMissingProb} to $1$ and \code{homozygoteMissingProb} to $0.05$ gives acceptable results. 
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
-table(imputed@geneticData[[2]]@imputed@data, finals(combined)[[2]])
+table(imputationData(imputed, design = 2), finals(combined)[[2]])
 imputed <- imputeFounders(mappedSNP, heterozygoteMissingProb = 1, homozygoteMissingProb = 0.05)
-table(imputed@geneticData[[2]]@imputed@data, finals(combined)[[2]])
+table(imputationData(imputed, design = 2), finals(combined)[[2]])
 @
 The miss-classifications still demonstrate the same problem to a lesser extent. Value $5$ is a heterozygote of founders 1 and 2, and just under 50\% of these values are miss-classified as homozygotes of founders $1$ or $2$. 
 
@@ -526,7 +527,7 @@ grouped <- formGroups(rf, groups = 3, method = "average", clusterBy="theta")
 ordered <- orderCross(grouped, effortMultiplier = 2)
 imputedTheta <- impute(ordered, verbose = list(progressStyle = 1)) 
 @
-The next step is to estimate the map. Our estimated map is significantly longer than the true map. Note the use of the function \code{jitterMap}. This function spaces out markers that have been assigned to the same location. This is necessary for the purposes of imputation, as the estimateMap function is capable of estimating a map where markers which are observed to have at least one recombination event between them are assigned the same location. This makes the map incompatible with the data, and would cause problems during the imputation step. 
+The next step is to estimate the map. Our estimated map is significantly longer than the true map. Note the use of the function \code{jitterMap}. This function spaces out markers that have been assigned to the same location. This is necessary for the purposes of imputation, as \code{estimateMap} is capable of estimating a map where markers which are observed to have at least one recombination event between them are assigned the same location. This makes the map incompatible with the data, and would cause problems during the imputation step, unless a non-zero \code{errorProb} is specified. . 
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
 estimatedMap <- estimateMap(imputedTheta, maxOffset = 10)
 estimatedMap <- jitterMap(estimatedMap)
