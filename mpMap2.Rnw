@@ -303,7 +303,7 @@ The entry \code{errors\$null} indicates that the second marker has a missing all
 
 The entry \code{errors\$finals} indicates that line $1$ has an invalid value of $100$ for marker $1$. It also indicates that every marker allele except $1$ is invalid for marker $4$, due to the modification of \code{hetData[[4]]}. 
 
-\section{Estimation of recombination fractions}
+\section{Estimation of recombination fractions} \label{sec:estimation_rf}
 
 \subsection{Methodology}\label{subsec:estimation_rf_methodology}
 
@@ -448,6 +448,61 @@ clusterOrderCross(mpcrossLG, cool = 0.5, tmin = 0.1, nReps = 1,
 After using \code{clusterOrderCross}, finer scale ordering can be performed using \code{orderCross} with \code{randomStart = FALSE} and setting \code{maxMove} to a relatively small value, which ensures only local changes are made to the ordering.
 
 \section{Estimation of map distances}
+
+Estimation of map distances is non-trivial, even if the correct ordering of the markers is known. One possibility is to take the estimated recombination fractions between adjacent markers, and convert them to centiMorgan distances. However, as demonstrated in Section \ref{sec:estimation_rf}, for some experimental designs and some specific marker allele distributions, the corresponding recombination fraction is very hard to estimate. In some cases the data can even be completely uninformative about the recombination fraction. This approach is also wasteful in terms of the available information; we have recombination fractions estimates between all pairs of markers, not just all adjacent pairs. 
+
+Our map estimation process uses a matrix of constraints, involving not just the recombination fractions between adjacent markers, but any pair of markers that are sufficiently close, in terms of the chosen ordering. This matrix equation is then solved by non-linear least squares, using the \pkg{nnls} \citep{nnls} package. Consider the case where there are three markers. With the markers in the (assumed) correct order, the matrix of estimated genetic distances (obtained from the estimated recombination fractions) is
+\begin{align*}
+\left(\begin{array}{ccc}
+0 & 5 & 15 \\
+5 & 0 & 7 \\
+15 & 7 & 0
+\end{array}\right).
+\end{align*}
+Then the matrix equation to be solved is
+\begin{align*}
+\left( \begin{array}{cc}
+1 & 0 \\
+1 & 1\\
+0 & 1
+\end{array}\right)
+\left( \begin{array}{c} a_1 \\ a_2 \end{array}\right) = \left( \begin{array}{c}5 \\ 15 \\ 7\end{array}\right),
+\end{align*}
+where $a_1$ is the distance between the first and second markers, and $a_2$ is the distance between the second and third markers. 
+
+If \emph{all} pairs of markers are used, then the matrix equation becomes large very quickly. As a compromise, we use only pairs of markers that are close, in terms of position within the specified ordering. For example, assume that there are five markers, and we wish to estimate the map distances, using only pairs of markers that are separated by at most two other genetic markers. Assume that the estimated matrix of pairwise genetic distances is
+\begin{align*}
+\left(\begin{array}{ccccc}
+0  & 5  & 9 & 17 & 24\\
+5  & 0  & 7 & 11 & 15\\
+9  & 7  & 0 & 6  & 9\\
+17 & 11 & 6 & 0  & 3\\
+24 & 15 & 9 & 3  & 0
+\end{array}\right).
+\end{align*}
+Then the corresponding matrix equation is 
+\begin{align*}
+\left( \begin{array}{cccc}
+1 & 0 & 0 & 0 \\
+1 & 1 & 0 & 0 \\
+1 & 1 & 1 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 1 & 1 & 0 \\
+0 & 1 & 1 & 1 \\
+0 & 0 & 1 & 0 \\
+0 & 0 & 1 & 1 \\
+0 & 0 & 0 & 1
+\end{array}\right)
+\left( \begin{array}{c} a_1 \\ a_2 \\ a_3 \\ a_4 \end{array}\right) = \left( \begin{array}{c}5 \\ 9 \\ 17 \\ 7 \\ 11 \\ 15 \\ 6 \\ 9 \\ 3\end{array}\right).
+\end{align*}
+Note that the constraint $a_1 + a_2 + a_3 + a_4 = 24$ is not used. 
+
+The function to estimate a genetic map using this approach is
+
+\begin{Code}
+estimateMap (mpcrossLG, mapFunction = rfToHaldane, maxOffset = 1, maxMarkers = 2000, verbose = FALSE)
+\end{Code}
+Input \code{mpcrossLG} is a mpcross object with assigned linkage groups. Input \code{mapFunction} is a map funtion that turns recombination fractions into centiMorgan distances. Input \code{maxOffset} is the maximum ordering difference between two markers, so that the estimated distance between those markers will be used. For example, in the five marker example just given, this input was $3$, because the distance between markers $1$ and $4$ were used, and so was the distance between markers $2$ and $5$. But the distance between markers $1$ and $5$ was not used. Input \code{maxMarkers} is the maximum number of markers, for which the genetic map will be estimated in a single pass. If there is a larger number of markers in a single linkage group, the map will be estimated in smaller parts, and these parts are then combined. If input \code{verbose} is \code{TRUE}, then logging output is generated.  
 
 \section{Probability models for imputation and probability computations}
 
