@@ -260,7 +260,7 @@ names(hetData) <- paste0("M", 1:10)
 hetData <- new("hetData", hetData)
 hetData[[1]]
 @
-Specifying \code{hetData = infiniteSelfing} is a shortcut for this common case. A slightly more complicated case is SNP markers with heterozygotes called. In this case the \code{hetData} object might constructed be as follows.
+Specifying \code{hetData = infiniteSelfing} is a shortcut for this common case. Another common case is bi-allelic SNP markers with heterozygotes called, which is specified with \code{hetData = hetsForSNPMarkers}. An example of \emph{manually} constructing the \code{hetData} object for SNP markers with heterozygotes is as follows.
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 nMarkers <- 10
 hetData <- replicate(nMarkers, rbind(rep(0, 3), rep(1, 3), c(0, 1, 2), c(1, 0, 2)), simplify=FALSE)
