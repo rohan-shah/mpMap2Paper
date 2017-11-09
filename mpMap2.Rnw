@@ -149,7 +149,7 @@ plot(pedigreeToGraph(p))
 @
 This pedigree will be recognised as a special case of the eight-parent design where the founders are repeated within a funnel, so pedigrees of this type can be used for map construction. 
 
-\section{Genetic data}
+\section{Genetic data and genetic maps}
 
 \subsection{Simulation}
 
@@ -209,14 +209,32 @@ subset(mpcross, markers, chromosomes, lines, groups)
 \end{Code}
 Input \code{markers} can be marker names of indices within \code{markers(mpcross)}. Input \code{chromosomes} is only valid if object \code{mpcross} has an associated map, and must refer to chromosomose by name. Input \code{lines} must refer to lines by name. Input \code{groups} is only valid if object \code{mpcross} has associated linkage groups (without an actual map). 
 
-\subsection{Less informative markers}
+\subsection{Fully informative markers}
 
-When simulating data using \code{simulateMPCross} all markers are generated as fully informative (including all heterozygotes, which are simulated as being distinguishable). We can see this by inspecting the contained objects of class \code{geneticData}. Slot \code{founders} contains data about the founder alleles. The founders data can be accessed by the helper function \code{founders}. 
+When simulating data using \code{simulateMPCross} all markers are generated as fully informative. We can see this by inspecting the contained objects of class \code{geneticData}. Slot \code{founders} contains data about the founder alleles. The founders data can be accessed by the helper function \code{founders}. 
 <<cache=TRUE>>=
 #Equivalent to crossSingleFunnel@geneticData[[1]]@founders[,1:5]
 founders(crossSingleFunnel)[,1:5]
 @
-Slot \code{hetData} determines how heterozygotes are mapped to observed values. In the case of the data we have generated so far, each founder has a unique allele, and all heterozygotes are distinct. Heterozygote data for a marker is formatted in three columns. The first and second are marker alleles, and the third is the encoding of that combination of marker alleles. It is required that a homozygote for a marker allele $m$ be encoded as $m$. For example, a row containing $1, 1, 0$ is invalid. Helper function \code{hetData} can be used to access the heterozygote data. 
+When simulating data using \code{simulateMPCross} all marker heterozygotes are also simulated as being distinguishable. The simulated object contains information about how combinations of marker alleles from the founder lines are mapped to observed values for the final population. As the founders are assumed to be inbred, it is logical that a homozygote of each marker allele present in the founders should be encoded identically in the final population. For example, in the simulated population we are considering, there are alleles \code{1 - 4} for each marker, and values \code{1 - 4} for the final population represent homozygotes of those alleles. This restriction is enforced by the package, so it is not possible to encode a homozygote of marker allele \code{2} in the founder lines, as \code{3} in the final population. 
+
+The marker alleles for the founders do not \emph{have} to be the values \code{1 - 4}. For example, another possibility is:
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{verbatim}
+##      D1M1 D1M2 D1M3 D1M4 D1M5
+## SFL1    1    1    1    1    1
+## SFL2   10   10   10   10   10
+## SFL3  100  100  100  100  100
+## SFL4  200  200  200  200  200
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+In this case values \code{1, 10, 100} and \code{200} for the final population must represent a homozygote of the corresponding marker allele. 
+
+Data about the encoding of heterozygotes is contained in the \code{hetData} slot. Heterozygote data for a marker is formatted in three columns. The first and second are marker alleles, and the third is the encoding of that combination of marker alleles, for a line in the final population. As mentioned previously, it is required that a homozygote for a marker allele $m$ be encoded as $m$. For example, a row containing $1, 1$ and $0$  would be invalid, as it attempts to encode a heterozygote of marker allele $1$ as $0$.  
+
+Helper function \code{hetData} can be used to access the heterozygote data. For example:
 <<cache=TRUE>>=
 #Equivalent to crossSingleFunnel@geneticData[[1]]@hetData[["D1M1"]]
 hetData(crossSingleFunnel, "D1M1")
@@ -225,6 +243,8 @@ Observed values $1 - 4$ correspond to homozygotes for founder lines, and values 
 <<cache=TRUE>>=
 table(finals(crossSingleFunnel)[,1])
 @
+
+\subsection{Less informative markers}
 
 The most common types of markers currently used are \emph{Single Nucleotide Polymorphism} (SNP) markers. To convert our simulated data objects to these types of markers, we combine them with a call to \code{multiparentSNP}. 
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=50)>>=
@@ -238,7 +258,7 @@ combinedSNP@geneticData[[2]] <- combinedSNP@geneticData[[2]] + multiparentSNP(ke
 founders(combinedSNP@geneticData[[1]])[, 1:5]
 hetData(combinedSNP, "D1M1") 
 @
-The founders in object \code{combinedSNP} now have only two alleles ($0$ and $1$) for every marker. In the first data set combinations of different marker alleles are coded as $2$. For the second data set we specified \code{keepHets = FALSE} so these marker heterozygotes are replaced by \code{NA}. The corresponding function for biparental designs is \code{biparentalSNP}. 
+The founders in object \code{combinedSNP} now have only two alleles ($0$ and $1$) for every marker. In the first data set combinations of different marker alleles are coded as $2$. For the second data set we specified \code{keepHets = FALSE} so these marker heterozygotes are replaced by \code{NA} in the data, and no encoding for heterozygotes is specified. The corresponding function for biparental designs is \code{biparentalSNP}. 
 
 \subsection{Importing data}
 
@@ -252,7 +272,7 @@ Input \code{finals} is the matrix of marker alleles for the final population of 
 
 Input \code{pedigree} must be a pedigree object, as described in Section \ref{sec:pedigree}. 
 
-Input \code{hetData} describes the encoding of the marker alleles for the final population, and must have class \code{hetData}. In the simplest case we have \code{nMarkers} SNP markers without any heterozygote calls, so the \code{hetData} object can be constructed as follows.
+Input \code{hetData} describes the encoding of the marker alleles for the final population, and must have class \code{hetData}. It is list, where the names of elements are marker names, and each entry is a three-column matrix, giving the marker encodings for that marker. In the simplest case we have \code{nMarkers} SNP markers without any heterozygote calls, so the \code{hetData} object can be constructed as follows.
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 nMarkers <- 10
 hetData <- replicate(nMarkers, rbind(rep(0, 3), rep(1, 3)), simplify=FALSE)
@@ -260,7 +280,7 @@ names(hetData) <- paste0("M", 1:10)
 hetData <- new("hetData", hetData)
 hetData[[1]]
 @
-Specifying \code{hetData = infiniteSelfing} is a shortcut for this common case. Another common case is bi-allelic SNP markers with heterozygotes called, which is specified with \code{hetData = hetsForSNPMarkers}. An example of \emph{manually} constructing the \code{hetData} object for SNP markers with heterozygotes is as follows.
+Specifying \code{hetData = infiniteSelfing} in the call to \code{mpcross} is a shortcut for this common case. Another common case is bi-allelic SNP markers with heterozygotes called, which is specified with \code{hetData = hetsForSNPMarkers} in the call to \code{mpcross}. The encoding for the heterozygotes can be automatically be determined from the data, as there is only a single heterozygote. An example of \emph{manually} constructing the \code{hetData} object for SNP markers with heterozygotes is as follows.
 <<cache=TRUE,tidy=TRUE,tidy.opts=list(width.cutoff=56)>>=
 nMarkers <- 10
 hetData <- replicate(nMarkers, rbind(rep(0, 3), rep(1, 3), c(0, 1, 2), c(1, 0, 2)), simplify=FALSE)
@@ -302,6 +322,19 @@ We begin with \code{errors\$invalidHetData}. There are errors in the \code{hetDa
 The entry \code{errors\$null} indicates that the second marker has a missing allele for a founder. For these markers the observed marker alleles for the final population must be \code{NA}, and the corresponding \code{hetData} entry must have zero rows.  
 
 The entry \code{errors\$finals} indicates that line $1$ has an invalid value of $100$ for marker $1$. It also indicates that every marker allele except $1$ is invalid for marker $4$, due to the modification of \code{hetData[[4]]}. 
+
+\subsection{Genetic maps}
+
+The format used for genetic maps in this package is identical to that in package \pkg{qtl}. A genetic map is a named list, where the name of each entry is the name of that chromosome. Each entry contains the names and positions of each marker, in increasing order. The overall object must have class \code{"map"}. We now give an example of the structure of a simulated map. 
+<<cache = TRUE, tidy = TRUE, tidy.opts=list(width.cutoff=56)>>=
+simulatedMap <- qtl::sim.map(len = rep(100, 2), n.mar = 11, anchor.tel = TRUE, include.x = FALSE, eq.spacing = FALSE)
+#map object has class "map"
+class(simulatedMap)
+#Names of entries are chromosomoe names
+names(simulatedMap)
+#Markers are in increasing order. 
+simulatedMap[["1"]]
+@
 
 \section{Estimation of recombination fractions} \label{sec:estimation_rf}
 
@@ -500,7 +533,8 @@ Note that the constraint $a_1 + a_2 + a_3 + a_4 = 24$ is not used.
 The function to estimate a genetic map using this approach is
 
 \begin{Code}
-estimateMap (mpcrossLG, mapFunction = rfToHaldane, maxOffset = 1, maxMarkers = 2000, verbose = FALSE)
+estimateMap (mpcrossLG, mapFunction = rfToHaldane, maxOffset = 1, 
+    maxMarkers = 2000, verbose = FALSE)
 \end{Code}
 Input \code{mpcrossLG} is a mpcross object with assigned linkage groups. Input \code{mapFunction} is a map funtion that turns recombination fractions into centiMorgan distances. Input \code{maxOffset} is the maximum ordering difference between two markers, so that the estimated distance between those markers will be used. For example, in the five marker example just given, this input was $3$, because the distance between markers $1$ and $4$ were used, and so was the distance between markers $2$ and $5$. But the distance between markers $1$ and $5$ was not used. Input \code{maxMarkers} is the maximum number of markers, for which the genetic map will be estimated in a single pass. If there is a larger number of markers in a single linkage group, the map will be estimated in smaller parts, and these parts are then combined. If input \code{verbose} is \code{TRUE}, then logging output is generated.  
 
