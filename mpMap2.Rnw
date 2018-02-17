@@ -36,7 +36,7 @@
 \newcommand\commentFont[1]{\footnotesize\ttfamily{#1}}
 \SetCommentSty{commentFont}
 
-\author{Rohan Shah\\Statistical Genetics \& Genomics\\Data 61, Brisbane\\\\School of Mathematics \& Physics\\The University of Queensland, Brisbane \And B. Emma Huang\\Janssen Research \& Development
+\author{Rohan Shah\\Statistical Genetics \& Genomics\\Data 61, Brisbane \And B. Emma Huang\\Janssen Research \& Development
 }
 \Plainauthor{Rohan Shah, B. Emma Huang}
 \title{\pkg{mpMap2}: An R pipeline for genetic map construction}
@@ -211,12 +211,12 @@ Input \code{markers} can be marker names of indices within \code{markers(mpcross
 
 \subsection{Fully informative markers}
 
-When simulating data using \code{simulateMPCross} all markers are generated as fully informative. We can see this by inspecting the contained objects of class \code{geneticData}. Slot \code{founders} contains data about the founder alleles. The founders data can be accessed by the helper function \code{founders}. 
+When simulating data using \code{simulateMPCross} all markers are generated as fully informative. We can see this by inspecting the contained objects of class \code{geneticData}. Slot \code{founders} contains data about the founder alleles. The founders data can be accessed by the helper function \code{founders}. In the following case, each founder line carries a unique marker allele, for all five markers. 
 <<cache=TRUE>>=
 #Equivalent to crossSingleFunnel@geneticData[[1]]@founders[,1:5]
 founders(crossSingleFunnel)[,1:5]
 @
-When simulating data using \code{simulateMPCross} all marker heterozygotes are also simulated as being distinguishable. The simulated object contains information about how combinations of marker alleles from the founder lines are mapped to observed values for the final population. As the founders are assumed to be inbred, it is logical that a homozygote of each marker allele present in the founders should be encoded identically in the final population. For example, in the simulated population we are considering, there are alleles \code{1 - 4} for each marker, and values \code{1 - 4} for the final population represent homozygotes of those alleles. This restriction is enforced by the package, so it is not possible to encode a homozygote of marker allele \code{2} in the founder lines, as \code{3} in the final population. 
+When simulating data using \code{simulateMPCross}, there are also marker heterozygotes, which by default are all simulated as being distinguishable. The simulated object contains information about how combinations of marker alleles from the founder lines are mapped to observed values for the final population. As the founders are assumed to be inbred, it is logical that a homozygote of each marker allele present in the founders should be encoded identically in the final population. For example, in the simulated population we are considering, there are alleles \code{1 - 4} for each marker, and values \code{1 - 4} for the final population represent homozygotes of those alleles. This restriction is enforced by the package, so it is not possible to encode a homozygote of marker allele \code{2} in the founder lines, as \code{3} in the final population. 
 
 The marker alleles for the founders do not \emph{have} to be the values \code{1 - 4}. For example, another possibility is:
 \begin{knitrout}
@@ -232,14 +232,14 @@ The marker alleles for the founders do not \emph{have} to be the values \code{1 
 \end{knitrout}
 In this case values \code{1, 10, 100} and \code{200} for the final population must represent a homozygote of the corresponding marker allele. 
 
-Data about the encoding of heterozygotes is contained in the \code{hetData} slot. Heterozygote data for a marker is formatted in three columns. The first and second are marker alleles, and the third is the encoding of that combination of marker alleles, for a line in the final population. As mentioned previously, it is required that a homozygote for a marker allele $m$ be encoded as $m$. For example, a row containing $1, 1$ and $0$  would be invalid, as it attempts to encode a heterozygote of marker allele $1$ as $0$.  
+Data about the encoding of heterozygotes is contained in the \code{hetData} slot. Heterozygote data for a marker is formatted in three columns. The first and second are marker alleles, and the third is the encoding of that combination of marker alleles, for a line in the final population. As mentioned previously, it is required that a homozygote for a marker allele $m$ be encoded as $m$. For example, a row containing $1, 1$ and $0$  would be invalid, as it attempts to encode a homozygote of marker allele $1$ as $0$ in the final population.  
 
 Helper function \code{hetData} can be used to access the heterozygote data. For example:
 <<cache=TRUE>>=
 #Equivalent to crossSingleFunnel@geneticData[[1]]@hetData[["D1M1"]]
 hetData(crossSingleFunnel, "D1M1")
 @
-Observed values $1 - 4$ correspond to homozygotes for founder lines, and values $5 - 10$ correspond to different heterozygotes. We specified $2$ generations of selfing and this is reflected in the distribution of observed values for the final population. 
+Columns one and two give a pair of marker alleles, and the third column gives the encoding of this combination in the final poulation. So observed values $1 - 4$ correspond to homozygotes for founder lines, and values $5 - 10$ correspond to different heterozygotes. We specified $2$ generations of selfing and this is reflected in the distribution of observed values for the final population. 
 <<cache=TRUE>>=
 table(finals(crossSingleFunnel)[,1])
 @
